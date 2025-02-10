@@ -105,7 +105,6 @@ function App() {
     setEditingEvent,
     handleStartTimeChange,
     handleEndTimeChange,
-    resetForm,
     editEvent,
   } = useEventForm();
 
@@ -173,7 +172,13 @@ function App() {
         setIsOverlapDialogOpen(true);
       } else {
         await saveEvent(eventData, editingEvent ? updateType : undefined);
-        resetForm();
+        if (editingEvent && updateType === 'single') {
+          const updatedEvent = {
+            ...eventData,
+            repeat: { type: 'none', interval: 1 } // 단일 일정으로 변경
+          };
+          editEvent(updatedEvent as Event); // 폼에 업데이트된 정보 설정
+        }
         setIsUpdateDialogOpen(false);
       }
     } else if (action === 'delete' && selectedEventId) {
