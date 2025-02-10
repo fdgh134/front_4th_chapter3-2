@@ -33,6 +33,12 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
+    'jsx-a11y/no-access-key': 'off',
+    'jsx-a11y/aria-props': 'off',
+    'jsx-a11y/aria-proptypes': 'off',
+    'jsx-a11y/aria-unsupported-elements': 'off',
+    'jsx-a11y/role-has-required-aria-props': 'off',
+    'jsx-a11y/role-supports-aria-props': 'off',
   },
   globals: {
     Set: true,

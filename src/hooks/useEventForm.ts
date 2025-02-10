@@ -25,6 +25,9 @@ export const useEventForm = (initialEvent?: Event) => {
     startTimeError: null,
     endTimeError: null,
   });
+  const [repeatWeekdays, setRepeatWeekdays] = useState<number[]>(
+    initialEvent?.repeat?.weekdays || []
+  );
 
   const handleStartTimeChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newStartTime = e.target.value;
@@ -92,6 +95,8 @@ export const useEventForm = (initialEvent?: Event) => {
     setRepeatInterval,
     repeatEndDate,
     setRepeatEndDate,
+    repeatWeekdays,
+    setRepeatWeekdays,
     notificationTime,
     setNotificationTime,
     startTimeError,
