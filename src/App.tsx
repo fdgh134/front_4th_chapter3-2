@@ -398,13 +398,7 @@ function App() {
 
       <Button
         data-testid="event-submit-button"
-        onClick={() => {
-          if (editingEvent?.repeat?.type !== 'none') {
-            setIsUpdateDialogOpen(true);
-          } else {
-            addOrUpdateEvent('save');
-          }
-        }}
+        onClick={() => addOrUpdateEvent('save')}
         colorScheme="blue"
       >
         {editingEvent ? '일정 수정' : '일정 추가'}
@@ -419,11 +413,14 @@ function App() {
     return (
       <Box
         key={event.id}
-        p={1}
-        my={1}
-        bg={isNotified ? 'red.100' : 'gray.100'}
-        borderRadius="md"
+        p={isCalendarView ? 1 : 4}
+        my={isCalendarView ? 1 : 2}
+        bg={isCalendarView ? 'gray.100' : 'white'}
+        borderRadius={isCalendarView ? 'md' : 'lg'}
+        borderWidth={isCalendarView ? 'none' : '1px'}
+        borderColor='gray.200'
         position="relative"
+        w={isCalendarView ? 'auto' : '100%'}
       >
         <HStack justifyContent="space-between">
           <VStack align="start" spacing={1}>
@@ -461,6 +458,7 @@ function App() {
               <IconButton
                 aria-label="Edit event"
                 icon={<EditIcon />}
+                bg="gray.100"
                 onClick={() => {
                   editEvent(event);
                   if (event.repeat?.type !== 'none') {
@@ -471,6 +469,7 @@ function App() {
               <IconButton
                 aria-label="Delete event"
                 icon={<DeleteIcon />}
+                bg="gray.100"
                 onClick={() => {
                   setSelectedEventId(event.id);
                   if (event.repeat?.type !== 'none') {

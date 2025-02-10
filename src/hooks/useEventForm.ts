@@ -62,13 +62,14 @@ export const useEventForm = (initialEvent?: Event) => {
     setDate(event.date);
     setStartTime(event.startTime);
     setEndTime(event.endTime);
-    setDescription(event.description);
-    setLocation(event.location);
-    setCategory(event.category);
+    setDescription(event.description || '');
+    setLocation(event.location || '');
+    setCategory(event.category || '');
     setIsRepeating(event.repeat.type !== 'none');
     setRepeatType(event.repeat.type);
-    setRepeatInterval(event.repeat.interval);
+    setRepeatInterval(event.repeat.interval || 1);
     setRepeatEndDate(event.repeat.endDate || '');
+    setRepeatWeekdays(event.repeat.weekdays || []);
     setNotificationTime(event.notificationTime);
   };
 

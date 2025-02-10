@@ -46,43 +46,6 @@ const getDefaultEndDate = (startDate) => {
   return defaultEnd;
 };
 
-// 반복 일정 날짜 생성 함수
-const generateRecurringDates = (event) => {
-  const { date, repeat } = event;
-  const startDate = new Date(date);
-  const endDate = repeat.endDate ? new Date(repeat.endDate) : getDefaultEndDate(startDate);
-  const dates = [];
-  let currentDate = new Date(startDate);
-
-  while (currentDate <= endDate) {
-    // 요일 지정이 있는 경우 해당 요일에만 일정 생성
-    if (!repeat.weekdays || isSelectedDay(currentDate, repeat.weekdays)) {
-      dates.push(new Date(currentDate));
-    }
-
-    switch (repeat.type) {
-      case "daily":
-        currentDate.setDate(currentDate.getDate() + repeat.interval);
-        break;
-      case "weekly":
-        currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
-        break;
-      case "monthly":
-        currentDate.setMonth(currentDate.getDate() + repeat.interval);
-        currentDate = adjustDate(currentDate, "monthly");
-        break;
-      case "yearly":
-        currentDate.setFullYear(currentDate.getFullYear() + repeat.interval);
-        currentDate = adjustDate(currentDate, "yearly");
-        break;
-      default:
-        break;
-    }
-  }
-
-  return dates;
-};
-
 // JSON 파일에서 이벤트 데이터 읽어오는 함수
 const getEvents = async () => {
   const data = await readFile(`${__dirname}/src/__mocks__/response/realEvents.json`, 'utf8');
@@ -108,80 +71,163 @@ app.get('/api/events', async (_, res) => {
 app.post('/api/events', async (req, res) => {
   const events = await getEvents();
   const newEvent = { id: randomUUID(), ...req.body };
+  
+  // 반복 일정인 경우
+  if (newEvent.repeat.type !== 'none') {
+    const repeatId = randomUUID(); // 반복 일정 그룹화를 위한 ID
+    const startDate = new Date(newEvent.date);
+    const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : getDefaultEndDate(startDate);
+    const recurringEvents = [];
+    let currentDate = new Date(startDate);
 
-  fs.writeFileSync(
-    `${__dirname}/src/__mocks__/response/realEvents.json`,
-    JSON.stringify({
-      events: [...events.events, newEvent],
-    })
-  );
+    while (currentDate <= endDate) {
+      // 주간 반복인 경우 요일 체크
+      if (newEvent.repeat.type === 'weekly' && newEvent.repeat.weekdays?.length > 0) {
+        if (newEvent.repeat.weekdays.includes(currentDate.getDay())) {
+          recurringEvents.push({
+            ...newEvent,
+            id: randomUUID(),
+            date: currentDate.toISOString().split('T')[0],
+            repeat: {
+              ...newEvent.repeat,
+              id: repeatId // 반복 일정 그룹 ID
+            }
+          });
+        }
+      } else {
+        recurringEvents.push({
+          ...newEvent,
+          id: randomUUID(),
+          date: currentDate.toISOString().split('T')[0],
+          repeat: {
+            ...newEvent.repeat,
+            id: repeatId // 반복 일정 그룹 ID
+          }
+        });
+      }
 
-  res.status(201).json(newEvent);
+      // 다음 날짜 계산
+      switch (newEvent.repeat.type) {
+        case 'daily':
+          currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
+          break;
+        case 'weekly':
+          currentDate.setDate(currentDate.getDate() + (7 * newEvent.repeat.interval));
+          break;
+        case 'monthly':
+          currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
+          currentDate = adjustDate(currentDate, 'monthly');
+          break;
+        case 'yearly':
+          currentDate.setFullYear(currentDate.getFullYear() + newEvent.repeat.interval);
+          currentDate = adjustDate(currentDate, 'yearly');
+          break;
+      }
+    }
+
+    const updatedEvents = {
+      events: [...events.events, ...recurringEvents]
+    };
+    saveEvents(updatedEvents);
+    res.status(201).json(recurringEvents);
+  } else {
+    // 단일 일정인 경우
+    const updatedEvents = {
+      events: [...events.events, newEvent]
+    };
+    saveEvents(updatedEvents);
+    res.status(201).json(newEvent);
+  }
 });
 
 // 이벤트 수정 API
 app.put('/api/events/:id', async (req, res) => {
   const events = await getEvents();
   const id = req.params.id;
-  const eventIndex = events.events.findIndex((event) => event.id === id);
-  if (eventIndex > -1) {
-    const newEvents = [...events.events];
-    newEvents[eventIndex] = { ...events.events[eventIndex], ...req.body };
-
-    fs.writeFileSync(
-      `${__dirname}/src/__mocks__/response/realEvents.json`,
-      JSON.stringify({
-        events: newEvents,
-      })
-    );
-
-    res.json(events.events[eventIndex]);
-  } else {
-    res.status(404).send('Event not found');
+  const event = events.events.find(e => e.id === id);
+  
+  if (!event) {
+    return res.status(404).send('Event not found');
   }
+
+  const { updateType = 'single' } = req.query;
+  const repeatId = event.repeat?.id;
+  let updatedEvents = [...events.events];
+
+  if (repeatId && updateType !== 'single') {
+    // 반복 일정 수정
+    if (updateType === 'future') {
+      // 현재 일정 이후의 모든 일정 수정
+      const eventDate = new Date(event.date);
+      updatedEvents = updatedEvents.map(e => {
+        if (e.repeat?.id === repeatId && new Date(e.date) >= eventDate) {
+          return { ...e, ...req.body };
+        }
+        return e;
+      });
+    } else if (updateType === 'all') {
+      // 모든 반복 일정 수정
+      updatedEvents = updatedEvents.map(e => {
+        if (e.repeat?.id === repeatId) {
+          return { ...e, ...req.body };
+        }
+        return e;
+      });
+    }
+  } else {
+    // 단일 일정 수정
+    const eventIndex = updatedEvents.findIndex(e => e.id === id);
+    updatedEvents[eventIndex] = { 
+      ...updatedEvents[eventIndex], 
+      ...req.body,
+      repeat: { type: 'none', interval: 1 } // 반복 설정 제거
+    };
+  }
+
+  const updatedEventData = {
+    events: updatedEvents
+  };
+  saveEvents(updatedEventData);
+  res.json(updatedEvents.find(e => e.id === id));
 });
 
 // 이벤트 삭제 API
 app.delete('/api/events/:id', async (req, res) => {
   const events = await getEvents();
   const id = req.params.id;
+  const event = events.events.find(e => e.id === id);
 
-  fs.writeFileSync(
-    `${__dirname}/src/__mocks__/response/realEvents.json`,
-    JSON.stringify({
-      events: events.events.filter((event) => event.id !== id),
-    })
-  );
+  if (!event) {
+    return res.status(404).send('Event not found');
+  }
 
+  const { deleteType = 'single' } = req.query;
+  const repeatId = event.repeat?.id;
+  let updatedEvents = [...events.events];
+
+  if (repeatId && deleteType !== 'single') {
+    if (deleteType === 'future') {
+      // 현재 일정 이후의 모든 일정 삭제
+      const eventDate = new Date(event.date);
+      updatedEvents = updatedEvents.filter(e => 
+        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
+      );
+    } else if (deleteType === 'all') {
+      // 모든 반복 일정 삭제
+      updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
+    }
+  } else {
+    // 단일 일정 삭제
+    updatedEvents = updatedEvents.filter(e => e.id !== id);
+  }
+
+  const updatedEventData = {
+    events: updatedEvents
+  };
+  saveEvents(updatedEventData);
   res.status(204).send();
 });
 
-// 여러 이벤트 일괄 생성 API
-app.post('/api/events-list', async (req, res) => {
-  const events = await getEvents();
-  const repeatId = randomUUID();
-  const newEvents = req.body.events.map((event) => {
-    const isRepeatEvent = event.repeat.type !== 'none';
-    return {
-      id: randomUUID(),
-      ...event,
-      repeat: {
-        ...event.repeat,
-        id: isRepeatEvent ? repeatId : undefined,
-      },
-    };
-  });
-
-  fs.writeFileSync(
-    `${__dirname}/src/__mocks__/response/realEvents.json`,
-    JSON.stringify({
-      events: [...events.events, ...newEvents],
-    })
-  );
-
-  res.status(201).json(newEvents);
-});
-	
 // 여러 이벤트 일괄 수정 API
 app.put('/api/events-list', async (req, res) => {
   const events = await getEvents();
@@ -197,14 +243,11 @@ app.put('/api/events-list', async (req, res) => {
   });
 
   if (isUpdated) {
-    fs.writeFileSync(
-      `${__dirname}/src/__mocks__/response/realEvents.json`,
-      JSON.stringify({
-        events: newEvents,
-      })
-    );
-
-    res.json(events.events);
+    const updatedEvents = {
+      events: newEvents
+    };
+    saveEvents(updatedEvents);
+    res.json(newEvents);
   } else {
     res.status(404).send('Event not found');
   }
@@ -213,15 +256,12 @@ app.put('/api/events-list', async (req, res) => {
 // 여러 이벤트 일괄 삭제 API
 app.delete('/api/events-list', async (req, res) => {
   const events = await getEvents();
-  const newEvents = events.events.filter((event) => !req.body.eventIds.includes(event.id)); // ? ids를 전달하면 해당 아이디를 기준으로 events에서 제거
+  const newEvents = events.events.filter((event) => !req.body.eventIds.includes(event.id));
 
-  fs.writeFileSync(
-    `${__dirname}/src/__mocks__/response/realEvents.json`,
-    JSON.stringify({
-      events: newEvents,
-    })
-  );
-
+  const updatedEvents = {
+    events: newEvents
+  };
+  saveEvents(updatedEvents);
   res.status(204).send();
 });
 
