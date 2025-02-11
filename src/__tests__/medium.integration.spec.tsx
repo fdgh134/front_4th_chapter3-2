@@ -1,5 +1,5 @@
 import { ChakraProvider } from '@chakra-ui/react';
-import { render, screen, within, act } from '@testing-library/react';
+import { render, screen, within, act  } from '@testing-library/react';
 import { UserEvent, userEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { ReactElement } from 'react';
@@ -27,15 +27,23 @@ const saveSchedule = async (
 ) => {
   const { title, date, startTime, endTime, location, description, category } = form;
 
-  await user.click(screen.getAllByText('일정 추가')[0]);
+  await user.click(screen.getByRole('button', { name: '일정 추가' }));
 
-  await user.type(screen.getByLabelText('제목'), title);
-  await user.type(screen.getByLabelText('날짜'), date);
-  await user.type(screen.getByLabelText('시작 시간'), startTime);
-  await user.type(screen.getByLabelText('종료 시간'), endTime);
-  await user.type(screen.getByLabelText('설명'), description);
-  await user.type(screen.getByLabelText('위치'), location);
-  await user.selectOptions(screen.getByLabelText('카테고리'), category);
+  // 작은 지연 추가
+  await new Promise(resolve => setTimeout(resolve, 0));
+  
+  // 일반 텍스트 입력
+  await user.type(screen.getByRole('textbox', { name: '제목'}), title);
+  await user.type(screen.getByRole('textbox', { name: '설명' }), description);
+  await user.type(screen.getByRole('textbox', { name: '위치' }), location);
+
+  // date와 time 타입 입력 - 정규식 사용
+  await user.type(screen.getByLabelText(/날짜\s*\*/), date);
+  await user.type(screen.getByLabelText(/시작 시간\s*\*/), startTime);
+  await user.type(screen.getByLabelText(/종료 시간\s*\*/), endTime);
+
+  // select 입력
+  await user.selectOptions(screen.getByRole('combobox', { name: '카테고리 선택' }), category);
 
   await user.click(screen.getByTestId('event-submit-button'));
 };
@@ -72,10 +80,11 @@ describe('일정 CRUD 및 기본 기능', () => {
 
     await user.click(await screen.findByLabelText('Edit event'));
 
-    await user.clear(screen.getByLabelText('제목'));
-    await user.type(screen.getByLabelText('제목'), '수정된 회의');
-    await user.clear(screen.getByLabelText('설명'));
-    await user.type(screen.getByLabelText('설명'), '회의 내용 변경');
+    // 일반 텍스트 입력 수정
+    await user.clear(screen.getByRole('textbox', { name: '제목' }));
+    await user.type(screen.getByRole('textbox', { name: '제목' }), '수정된 회의');
+    await user.clear(screen.getByRole('textbox', { name: '설명' }));
+    await user.type(screen.getByRole('textbox', { name: '설명' }), '회의 내용 변경');
 
     await user.click(screen.getByTestId('event-submit-button'));
 
@@ -94,7 +103,7 @@ describe('일정 CRUD 및 기본 기능', () => {
     // 삭제 버튼 클릭
     const allDeleteButton = await screen.findAllByLabelText('Delete event');
     await user.click(allDeleteButton[0]);
-
+    
     expect(eventList.queryByText('삭제할 이벤트')).not.toBeInTheDocument();
   });
 });
@@ -295,10 +304,10 @@ describe('일정 충돌', () => {
     await user.click(editButton);
 
     // 시간 수정하여 다른 일정과 충돌 발생
-    await user.clear(screen.getByLabelText('시작 시간'));
-    await user.type(screen.getByLabelText('시작 시간'), '08:30');
-    await user.clear(screen.getByLabelText('종료 시간'));
-    await user.type(screen.getByLabelText('종료 시간'), '10:30');
+    await user.clear(screen.getByLabelText(/시작 시간\s*\*/));
+    await user.type(screen.getByLabelText(/시작 시간\s*\*/), '08:30');
+    await user.clear(screen.getByLabelText(/종료 시간\s*\*/));
+    await user.type(screen.getByLabelText(/종료 시간\s*\*/), '10:30');
 
     await user.click(screen.getByTestId('event-submit-button'));
 

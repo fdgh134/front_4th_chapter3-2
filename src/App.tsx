@@ -126,7 +126,7 @@ function App() {
 
   const toast = useToast();
 
-  const addOrUpdateEvent = async (action: 'save' | 'delete') => {
+  const addOrUpdateEvent = async (action: 'save' | 'delete', ignoreOverlap: boolean = false) => {
     if (action === 'save') {
       if (!title || !date || !startTime || !endTime) {
         toast({
@@ -167,11 +167,13 @@ function App() {
       };
   
       const overlapping = findOverlappingEvents(eventData, events);
-      if (overlapping.length > 0) {
+      if (!ignoreOverlap && overlapping.length > 0) {
         setOverlappingEvents(overlapping);
         setIsOverlapDialogOpen(true);
-      } else {
-        await saveEvent(eventData, editingEvent ? updateType : undefined);
+        return
+      }
+
+      await saveEvent(eventData, editingEvent ? updateType : undefined);
         if (editingEvent && updateType === 'single') {
           const updatedEvent = {
             ...eventData,
@@ -179,8 +181,8 @@ function App() {
           };
           editEvent(updatedEvent as Event); // 폼에 업데이트된 정보 설정
         }
-        setIsUpdateDialogOpen(false);
-      }
+        setIsUpdateDialogOpen(false);  
+      
     } else if (action === 'delete' && selectedEventId) {
       await deleteEvent(selectedEventId, updateType);
       setIsDeleteDialogOpen(false);
@@ -508,7 +510,7 @@ function App() {
                 if (event.repeat?.type !== 'none') {
                   setIsDeleteDialogOpen(true);
                 } else {
-                  addOrUpdateEvent('delete');
+                  deleteEvent(event.id, 'single');
                 }
               }}
             />
@@ -687,9 +689,9 @@ function App() {
               </Button>
               <Button
                 colorScheme="red"
-                onClick={() => {
+                onClick={async () => {
+                  await addOrUpdateEvent('save', true);
                   setIsOverlapDialogOpen(false);
-                  addOrUpdateEvent('save');
                 }}
                 ml={3}
               >

@@ -1,52 +1,18 @@
 {
   "events": [
     {
-      "id": "2b7545a6-ebee-426c-b906-2329bc8d62bd",
-      "title": "팀 회의",
-      "date": "2025-02-20",
-      "startTime": "10:00",
-      "endTime": "11:00",
-      "description": "주간 팀 미팅",
-      "location": "회의실 A",
-      "category": "업무",
-      "repeat": {
-        "type": "none",
-        "interval": 0
-      },
-      "notificationTime": 1
-    },
-    {
-      "id": "09702fb3-a478-40b3-905e-9ab3c8849dcd",
-      "title": "점심 약속",
-      "date": "2025-02-21",
-      "startTime": "12:30",
-      "endTime": "13:30",
-      "description": "동료와 점심 식사",
-      "location": "회사 근처 식당",
-      "category": "개인",
-      "repeat": {
-        "type": "none",
-        "interval": 0
-      },
-      "notificationTime": 1
-    },
-    {
-      "id": "15ada716-7546-4845-9d63-bc7ca77ce0ea",
-      "title": "반복테스트",
-      "date": "2025-02-17",
-      "startTime": "09:20",
-      "endTime": "10:20",
-      "description": "반복테스트",
+      "id": "60ff0515-6ab3-4927-b744-2688334150a6",
+      "title": "프로젝트 마감",
+      "date": "2025-02-12",
+      "startTime": "19:11",
+      "endTime": "20:11",
+      "description": "분기별 프로젝트 마감",
       "location": "사무실",
       "category": "업무",
       "repeat": {
-        "type": "weekly",
+        "type": "none",
         "interval": 1,
-        "endDate": "2025-02-27",
-        "weekdays": [
-          1
-        ],
-        "id": "cf1d02c7-4a02-492a-8a73-bf66b53eef57"
+        "weekdays": []
       },
       "notificationTime": 10
     }
