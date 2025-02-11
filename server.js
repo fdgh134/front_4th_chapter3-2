@@ -157,49 +157,27 @@ app.put('/api/events/:id', async (req, res) => {
   if (repeatId && updateType !== 'single') {
     const eventDate = new Date(event.date);
 
-    // 반복 일정 수정
+    // 먼저 기존의 반복 일정 제거
     if (updateType === 'future') {
-      // 현재 일정과 이후의 모두 제거 후 새로운 일정 수정
-      updatedEvents = updatedEvents.filter(e =>        
-        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)  
+      // 현재 일정 포함 이후 일정만 제거
+      updatedEvents = updatedEvents.filter(e => 
+        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
       );
-    
-      // 새로운 반복 ID로 향후 일정 생성
-      const newRepeatId = randomUUID();
-      const { repeat, ...eventData } = req.body;
-
-      // 새로운 반복 일정 생성
-      const startDate = new Date(eventDate);
-      const endDate = new Date(repeat.endDate || getDefaultEndDate(startDate));
-      let currentDate = new Date(startDate);
-
-      while (currentDate <= endDate) {
-        if (repeat.type === 'weekly' && repeat.weekdays?.length > 0) {
-          if (repeat.weekdays.includes(currentDate.getDay())) {
-            updatedEvents.push({
-              ...eventData,
-              id: randomUUID(),
-              date: currentDate.toISOString().split('T')[0],
-              repeat: {
-                ...repeat,
-                id: newRepeatId
-              }
-            });
-          }
-        }
-        currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
-      }
+    } else if (updateType === 'all') {
+      // 모든 반복 일정 제거
+      updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
     }
-  } else if (updateType === 'all') {
-    // 모든 반복 일정 제거 후 새로운 일정 추가
-    updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
-    const newRepeatId = randomUUID();
 
+    // 새로운 반복 ID 생성
+    const newRepeatId = randomUUID();
     const { repeat, ...eventData } = req.body;
-    const startDate = new Date(event.date);
+
+    // 새로운 반복 일정 생성
+    const startDate = updateType === 'future' ? eventDate : new Date(event.date);
     const endDate = new Date(repeat.endDate || getDefaultEndDate(startDate));
     let currentDate = new Date(startDate);
 
+    // 새로운 반복 일정 추가
     while (currentDate <= endDate) {
       if (repeat.type === 'weekly' && repeat.weekdays?.length > 0) {
         if (repeat.weekdays.includes(currentDate.getDay())) {
@@ -213,17 +191,47 @@ app.put('/api/events/:id', async (req, res) => {
             }
           });
         }
+      } else {
+        // 주간 반복이 아닌 경우
+        updatedEvents.push({
+          ...eventData,
+          id: randomUUID(),
+          date: currentDate.toISOString().split('T')[0],
+          repeat: {
+            ...repeat,
+            id: newRepeatId
+          }
+        });
       }
-      currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
+
+      // 다음 날짜 계산
+      switch (repeat.type) {
+        case 'daily':
+          currentDate.setDate(currentDate.getDate() + repeat.interval);
+          break;
+        case 'weekly':
+          currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
+          break;
+        case 'monthly':
+          currentDate.setMonth(currentDate.getMonth() + repeat.interval);
+          currentDate = adjustDate(currentDate, 'monthly');
+          break;
+        case 'yearly':
+          currentDate.setFullYear(currentDate.getFullYear() + repeat.interval);
+          currentDate = adjustDate(currentDate, 'yearly');
+          break;
+      }
     }
   } else {
     // 단일 일정 수정
     const eventIndex = updatedEvents.findIndex(e => e.id === id);
-    updatedEvents[eventIndex] = { 
+    if (eventIndex > -1) {
+      updatedEvents[eventIndex] = { 
       ...updatedEvents[eventIndex], 
       ...req.body,
       repeat: { type: 'none', interval: 1 } // 반복 설정 제거
     };
+    }    
   }
 
   const updatedEventData = {
