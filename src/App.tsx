@@ -323,6 +323,22 @@ function App() {
         </Checkbox>
       </FormControl>
 
+      <FormControl>
+        <FormLabel htmlFor="notification">알림 설정</FormLabel>
+        <Select
+          id="notification"
+          aria-label="알림 설정"
+          value={notificationTime}
+          onChange={(e) => setNotificationTime(Number(e.target.value))}
+        >
+          {notificationOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </FormControl>
+
       {isRepeating && (
         <VStack spacing={4}>
           <FormControl>
@@ -385,22 +401,6 @@ function App() {
         </VStack>
       )}
 
-      <FormControl>
-        <FormLabel htmlFor="notification">알림 설정</FormLabel>
-        <Select
-          id="notification"
-          aria-label="알림 설정"
-          value={notificationTime}
-          onChange={(e) => setNotificationTime(Number(e.target.value))}
-        >
-          {notificationOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-      </FormControl>
-
       <Button
         data-testid="event-submit-button"
         onClick={() => addOrUpdateEvent('save')}
@@ -410,22 +410,51 @@ function App() {
       </Button>
     </VStack>
   );
+
+  const renderCalendarEvent = (event: Event, isCalendarView = true) => {
+    const isNotified = notifiedEvents.includes(event.id);
+    const isRepeating = event.repeat?.type !== 'none';
   
-  const renderEvent = (event: Event, isCalendarView = false) => {
+    return (
+      <Box
+        key={event.id}
+        p={1}
+        my={1}
+        bg={isCalendarView ? 'blue.50' : 'white'}
+        borderRadius="md"
+        w="100%"
+      >
+        <HStack>
+          {isNotified && <BellIcon color="red.500" />}
+          {isRepeating && <RepeatIcon color="blue.500" />}
+          <Text
+            fontSize="sm"
+            noOfLines={1}
+            fontWeight={isNotified ? 'bold' : 'normal'}
+            color={isNotified ? 'red.500' : 'inherit'}
+          >
+            {event.title}
+          </Text>
+        </HStack>
+      </Box>
+    );
+  };
+  
+  const renderEvent = (event: Event) => {
     const isNotified = notifiedEvents.includes(event.id);
     const isRepeating = event.repeat?.type !== 'none';
 
     return (
       <Box
-        key={event.id}
-        p={isCalendarView ? 1 : 4}
-        my={isCalendarView ? 1 : 2}
-        bg={isCalendarView ? 'gray.100' : 'white'}
-        borderRadius={isCalendarView ? 'md' : 'lg'}
-        borderWidth={isCalendarView ? 'none' : '1px'}
+        key={`calendar-event-${event.id}`}
+        p={4}
+        my={2}
+        bg='white'
+        borderRadius='lg'
+        borderWidth='1px'
         borderColor='gray.200'
-        position="relative"
-        w={isCalendarView ? 'auto' : '100%'}
+        position='relative'
+        w='100%'
       >
         <HStack justifyContent="space-between">
           <VStack align="start" spacing={1}>
@@ -458,34 +487,32 @@ function App() {
               </Text>
             )}
           </VStack>
-          {!isCalendarView && ( // 캘린더 뷰가 아닐 때만 버튼 표시
-            <HStack>
-              <IconButton
-                aria-label="Edit event"
-                icon={<EditIcon />}
-                bg="gray.100"
-                onClick={() => {
-                  editEvent(event);
-                  if (event.repeat?.type !== 'none') {
-                    setIsUpdateDialogOpen(true);
-                  }
-                }}
-              />
-              <IconButton
-                aria-label="Delete event"
-                icon={<DeleteIcon />}
-                bg="gray.100"
-                onClick={() => {
-                  setSelectedEventId(event.id);
-                  if (event.repeat?.type !== 'none') {
-                    setIsDeleteDialogOpen(true);
-                  } else {
-                    addOrUpdateEvent('delete');
-                  }
-                }}
-              />
-            </HStack>
-          )}
+          <HStack>
+            <IconButton
+              aria-label="Edit event"
+              icon={<EditIcon />}
+              bg="gray.100"
+              onClick={() => {
+                editEvent(event);
+                if (event.repeat?.type !== 'none') {
+                  setIsUpdateDialogOpen(true);
+                }
+              }}
+            />
+            <IconButton
+              aria-label="Delete event"
+              icon={<DeleteIcon />}
+              bg="gray.100"
+              onClick={() => {
+                setSelectedEventId(event.id);
+                if (event.repeat?.type !== 'none') {
+                  setIsDeleteDialogOpen(true);
+                } else {
+                  addOrUpdateEvent('delete');
+                }
+              }}
+            />
+          </HStack>
         </HStack>
       </Box>
     );
@@ -513,7 +540,7 @@ function App() {
                   <Text fontWeight="bold">{date.getDate()}</Text>
                   {filteredEvents
                     .filter((event) => new Date(event.date).toDateString() === date.toDateString())
-                    .map((event) => renderEvent(event, true))}
+                    .map((event) => renderCalendarEvent(event, true))}
                 </Td>
               ))}
             </Tr>
@@ -562,7 +589,7 @@ function App() {
                               {holiday}
                             </Text>
                           )}
-                          {getEventsForDay(filteredEvents, day).map((event) => renderEvent(event, true))}
+                          {getEventsForDay(filteredEvents, day).map((event) => renderCalendarEvent(event, true))}
                         </>
                       )}
                     </Td>

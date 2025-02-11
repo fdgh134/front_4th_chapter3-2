@@ -145,34 +145,76 @@ app.put('/api/events/:id', async (req, res) => {
   const events = await getEvents();
   const id = req.params.id;
   const event = events.events.find(e => e.id === id);
-  
+  const { updateType = 'single' } = req.query;
+
   if (!event) {
     return res.status(404).send('Event not found');
   }
 
-  const { updateType = 'single' } = req.query;
-  const repeatId = event.repeat?.id;
   let updatedEvents = [...events.events];
+  const repeatId = event.repeat?.id;
 
   if (repeatId && updateType !== 'single') {
+    const eventDate = new Date(event.date);
+
     // 반복 일정 수정
     if (updateType === 'future') {
-      // 현재 일정 이후의 모든 일정 수정
-      const eventDate = new Date(event.date);
-      updatedEvents = updatedEvents.map(e => {
-        if (e.repeat?.id === repeatId && new Date(e.date) >= eventDate) {
-          return { ...e, ...req.body };
+      // 현재 일정과 이후의 모두 제거 후 새로운 일정 수정
+      updatedEvents = updatedEvents.filter(e =>        
+        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)  
+      );
+    
+      // 새로운 반복 ID로 향후 일정 생성
+      const newRepeatId = randomUUID();
+      const { repeat, ...eventData } = req.body;
+
+      // 새로운 반복 일정 생성
+      const startDate = new Date(eventDate);
+      const endDate = new Date(repeat.endDate || getDefaultEndDate(startDate));
+      let currentDate = new Date(startDate);
+
+      while (currentDate <= endDate) {
+        if (repeat.type === 'weekly' && repeat.weekdays?.length > 0) {
+          if (repeat.weekdays.includes(currentDate.getDay())) {
+            updatedEvents.push({
+              ...eventData,
+              id: randomUUID(),
+              date: currentDate.toISOString().split('T')[0],
+              repeat: {
+                ...repeat,
+                id: newRepeatId
+              }
+            });
+          }
         }
-        return e;
-      });
-    } else if (updateType === 'all') {
-      // 모든 반복 일정 수정
-      updatedEvents = updatedEvents.map(e => {
-        if (e.repeat?.id === repeatId) {
-          return { ...e, ...req.body };
+        currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
+      }
+    }
+  } else if (updateType === 'all') {
+    // 모든 반복 일정 제거 후 새로운 일정 추가
+    updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
+    const newRepeatId = randomUUID();
+
+    const { repeat, ...eventData } = req.body;
+    const startDate = new Date(event.date);
+    const endDate = new Date(repeat.endDate || getDefaultEndDate(startDate));
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      if (repeat.type === 'weekly' && repeat.weekdays?.length > 0) {
+        if (repeat.weekdays.includes(currentDate.getDay())) {
+          updatedEvents.push({
+            ...eventData,
+            id: randomUUID(),
+            date: currentDate.toISOString().split('T')[0],
+            repeat: {
+              ...repeat,
+              id: newRepeatId
+            }
+          });
         }
-        return e;
-      });
+      }
+      currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
     }
   } else {
     // 단일 일정 수정
