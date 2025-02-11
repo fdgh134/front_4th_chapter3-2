@@ -320,7 +320,15 @@ function App() {
 
       <FormControl>
         <FormLabel>반복 설정</FormLabel>
-        <Checkbox isChecked={isRepeating} onChange={(e) => setIsRepeating(e.target.checked)}>
+        <Checkbox 
+          data-testid="repeat-schedule-checkbox"
+          aria-label="반복 일정"
+          isChecked={isRepeating} 
+          onChange={(e) => {
+            console.log('Checkbox changed:', e.target.checked); // 디버그 로그
+            setIsRepeating(e.target.checked)
+          }}
+        >
           반복 일정
         </Checkbox>
       </FormControl>
@@ -347,7 +355,9 @@ function App() {
             <FormLabel htmlFor="repeat-type">반복 유형</FormLabel>
             <Select
               id="repeat-type"
-              aria-label="반복 유형 설정"
+              data-testid="repeat-type-select"
+              aria-label="반복 유형"
+              name="repeat-type"  // name 속성 추가
               value={repeatType}
               onChange={(e) => setRepeatType(e.target.value as RepeatType)}
             >
@@ -386,6 +396,7 @@ function App() {
               <FormLabel>반복 간격</FormLabel>
               <Input
                 type="number"
+                aria-label="반복 간격"
                 value={repeatInterval}
                 onChange={(e) => setRepeatInterval(Number(e.target.value))}
                 min={1}

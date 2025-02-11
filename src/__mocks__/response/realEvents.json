@@ -1,20 +1,3 @@
 {
-  "events": [
-    {
-      "id": "60ff0515-6ab3-4927-b744-2688334150a6",
-      "title": "프로젝트 마감",
-      "date": "2025-02-12",
-      "startTime": "19:11",
-      "endTime": "20:11",
-      "description": "분기별 프로젝트 마감",
-      "location": "사무실",
-      "category": "업무",
-      "repeat": {
-        "type": "none",
-        "interval": 1,
-        "weekdays": []
-      },
-      "notificationTime": 10
-    }
-  ]
+  "events": []
 }

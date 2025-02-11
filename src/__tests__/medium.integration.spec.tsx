@@ -1,5 +1,6 @@
+import { vi, beforeEach, afterEach } from 'vitest';
 import { ChakraProvider } from '@chakra-ui/react';
-import { render, screen, within, act  } from '@testing-library/react';
+import { render, screen, within, act } from '@testing-library/react';
 import { UserEvent, userEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { ReactElement } from 'react';
@@ -44,6 +45,93 @@ const saveSchedule = async (
 
   // select 입력
   await user.selectOptions(screen.getByRole('combobox', { name: '카테고리 선택' }), category);
+
+  await user.click(screen.getByTestId('event-submit-button'));
+};
+
+// 반복 일정 생성 함수
+const saveRepeatSchedule = async (
+  user: UserEvent,
+  form: {
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    description: string;
+    location: string;
+    category: string;
+    repeatType: string;
+    repeatInterval: number;
+    repeatEndDate?: string;
+    repeatWeekdays?: number[];
+  }
+) => {
+  const { 
+    title, date, startTime, endTime, 
+    description, location, category, 
+    repeatType, repeatInterval, 
+    repeatEndDate, repeatWeekdays 
+  } = form;
+
+  await user.click(screen.getByRole('button', { name: '일정 추가' }));
+
+  // 일반 텍스트 입력
+  await user.type(screen.getByRole('textbox', { name: '제목'}), title);
+  await user.type(screen.getByRole('textbox', { name: '설명' }), description);
+  await user.type(screen.getByRole('textbox', { name: '위치' }), location);
+
+  // 날짜와 시간 입력
+  await user.type(screen.getByLabelText(/날짜\s*\*/), date);
+  await user.type(screen.getByLabelText(/시작 시간\s*\*/), startTime);
+  await user.type(screen.getByLabelText(/종료 시간\s*\*/), endTime);
+
+  // 카테고리 선택
+  await user.selectOptions(screen.getByRole('combobox', { name: '카테고리 선택' }), category);
+
+  // 반복 일정 체크박스 클릭
+  const repeatCheckboxContainer = screen.getByText('반복 일정').closest('label');
+  if (!repeatCheckboxContainer) {
+    throw new Error('반복 일정 체크박스를 찾을 수 없습니다.');
+  }
+
+  const repeatCheckbox = repeatCheckboxContainer.querySelector('input[type="checkbox"]');
+  if (!repeatCheckbox) {
+    throw new Error('체크박스 input 요소를 찾을 수 없습니다.');
+  }
+
+  await user.click(repeatCheckboxContainer);
+
+  // 디버그: 반복 유형 select 요소 찾기
+  const repeatTypeSelect = screen.queryByTestId('repeat-type-select');
+  if (!repeatTypeSelect) {
+    console.log('모든 요소:', screen.getAllByRole('combobox').map(el => el.outerHTML));
+    throw new Error('반복 유형 select 요소를 찾을 수 없습니다.');
+  }
+
+  // 반복 유형 선택
+  await user.selectOptions(repeatTypeSelect, repeatType);
+
+  // 추가 반복 설정
+  if (repeatInterval > 1) {
+    const intervalInput = screen.getByRole('spinbutton', { name: '반복 간격' });
+    await user.clear(intervalInput);
+    await user.type(intervalInput, repeatInterval.toString());
+  }
+
+  // 반복 종료일 설정
+  if (repeatEndDate) {
+    const endDateInput = screen.getByLabelText('반복 종료일');
+    await user.type(endDateInput, repeatEndDate);
+  }
+
+  // 주간 반복 요일 설정
+  if (repeatType === 'weekly' && repeatWeekdays) {
+    const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+    repeatWeekdays.forEach(day => {
+      const checkbox = screen.getByText(weekDays[day]);
+      user.click(checkbox);
+    });
+  }
 
   await user.click(screen.getByTestId('event-submit-button'));
 };
@@ -335,8 +423,32 @@ it('notificationTime을 10으로 하면 지정 시간 10분 전 알람 텍스트
 });
 
 describe('반복 일정 기능', () => {
+  afterEach(() => {
+    server.resetHandlers();
+  });
+  
   it('반복 일정 생성시 반복 아이콘이 표시된다', async () => {
+    setupMockHandlerCreation();
 
+    const { user } = setup(<App />);
+
+    await saveRepeatSchedule(user, {
+      title: '주간 팀 미팅',
+      date: '2024-10-02',
+      startTime: '09:00',
+      endTime: '10:00',
+      description: '매주 진행되는 팀 미팅',
+      location: '회의실 A',
+      category: '업무',
+      repeatType: 'weekly',
+      repeatInterval: 1,
+      repeatWeekdays: [3], // 수요일만 선택
+    });
+
+    // 반복 아이콘이 표시되는지 확인
+    const eventList = within(screen.getByTestId('event-list'));
+    const repeatIcon = eventList.getByTestId('event-repeat-icon');
+    expect(repeatIcon).toBeInTheDocument();
   });
 
   it('반복 일정을 단일 수정하면 반복 아이콘이 사라진다', async () => {
