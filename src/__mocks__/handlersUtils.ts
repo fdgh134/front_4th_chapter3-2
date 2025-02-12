@@ -39,9 +39,26 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
           }
 
           // 다음 날짜 계산 (주간 반복)
-          currentDate.setDate(currentDate.getDate() + 7);
+          // currentDate.setDate(currentDate.getDate() + 7);
+          switch (newEvent.repeat.type) {
+            case 'daily':
+              currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
+              break;
+            case 'weekly':
+              currentDate.setDate(currentDate.getDate() + (7 * newEvent.repeat.interval));
+              break;
+            case 'monthly':
+              currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
+              break;
+            case 'yearly':
+              currentDate.setFullYear(currentDate.getFullYear() + newEvent.repeat.interval);
+              break;
+          }
         } 
+
         mockEvents.push(...recurringEvents);
+        
+        // 첫 번째 이벤트를 응답으로 반환
         return HttpResponse.json(recurringEvents[0], { status: 201 });
       } else {
         // 단일 일정 처리
@@ -49,6 +66,30 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
         mockEvents.push(newEvent);
         return HttpResponse.json(newEvent, { status: 201 });
       }
+    }),
+    http.put('/api/events/:id', async ({ params, request }) => {
+      const { id } = params;
+      const updatedEvent = (await request.json()) as Event;
+      const index = mockEvents.findIndex((event) => event.id === id);
+    
+      if (index !== -1) {
+        // 단일 일정으로 변경
+        const modifiedEvent: Event = {
+          ...mockEvents[index],
+          ...updatedEvent,
+          repeat: { 
+            type: 'none', 
+            interval: 1,
+            endDate: undefined,
+            weekdays: undefined
+          }
+        };
+        mockEvents[index] = { ...modifiedEvent };
+    
+        return HttpResponse.json(modifiedEvent);
+      }
+    
+      return HttpResponse.json(null, { status: 404 });
     })
   );
 };

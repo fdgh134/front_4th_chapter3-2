@@ -426,10 +426,6 @@ describe('반복 일정 기능', () => {
     const { user } = setup(<App />);
 
     await act(async () => {
-      vi.setSystemTime(new Date('2024-10-02'));
-    });
-
-    await act(async () => {
       await saveRepeatSchedule(user, {
         title: '주간 팀 미팅',
         date: '2024-10-02',
@@ -455,15 +451,13 @@ describe('반복 일정 기능', () => {
     });
 
     // 로딩 기다리기
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    });
+    await act(async () => null);
 
     // 데이터 검증
     const monthView = await screen.findByTestId('month-view');
     const cells = await within(monthView).findAllByRole('cell');
   
-    console.log('Cells content:', cells.map(cell => cell.textContent));
+    // console.log('Cells content:', cells.map(cell => cell.textContent));
 
     const hasEventTitle = cells.some(cell => 
       cell.textContent?.includes('주간 팀 미팅')
@@ -514,11 +508,14 @@ describe('반복 일정 기능', () => {
     const confirmButtons = screen.getAllByRole('button', { name: '확인' });
     await user.click(confirmButtons[0]);
 
+    // 잠시 대기
+    await act(async () => null);
+
     // 반복 아이콘 로깅
-    const remainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
+    const afterremainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
 
     // 반복 아이콘 확인
-    expect(remainingRepeatIcons.length).toBe(5); 
+    expect(afterremainingRepeatIcons.length).toBe(4); // 4
   });
 
   
@@ -526,8 +523,6 @@ describe('반복 일정 기능', () => {
     setupMockHandlerCreation([]);
 
     const { user } = setup(<App />);
-
-    vi.setSystemTime(new Date('2024-10-02'));
 
     // 반복 일정 생성
     await act(async () => {
@@ -546,6 +541,40 @@ describe('반복 일정 기능', () => {
       });
     });
 
+    // 토스트 메시지 대기
+    await act(async () => {
+      await screen.findByText('일정이 추가되었습니다.');
+    });
+
+    // 첫 번째 이벤트 삭제
+    const deleteButtons = await screen.findAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    // 단일 일정 삭제 라디오 버튼 선택
+    const singleDeleteRadio = screen.getByTestId('radio-update-single');
+    await user.click(singleDeleteRadio);
+
+    // 확인 버튼 클릭
+    const confirmButtons = screen.getAllByRole('button', { name: '확인' });
+    await user.click(confirmButtons[0]);
+
+    // 잠시 대기
+    await act(async () => null);
+
+    // 남은 이벤트 확인
+    const events = screen.getAllByTestId('event-item');
+
+    // 총 4개의 이벤트가 남아야 함
+    expect(events.length).toBe(4);
+
+    // 남은 이벤트들의 날짜 확인
+    const eventDates = events.map(event => {
+      const dateMatch = event.textContent?.match(/\d{4}-\d{2}-\d{2}/);
+      return dateMatch ? dateMatch[0] : null;
+    });
+
+    // 첫 번째 날짜(2024-10-02)가 제거되었는지 확인
+    expect(eventDates).not.toContain('2024-10-02');
   });
 
   it('윤년 2월 29일에 매월 반복 설정시 해당 월의 마지막 날에 일정이 생성된다', async () => {
@@ -578,9 +607,7 @@ describe('반복 일정 기능', () => {
     await user.selectOptions(screen.getByLabelText('view'), 'month');
 
     // 잠시 대기
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 200));
-    });
+    await act(async () => null);
 
     // 기대되는 날짜들 (월말)
     const expectedDates = [
