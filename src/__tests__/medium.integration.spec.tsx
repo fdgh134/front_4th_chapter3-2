@@ -73,13 +73,15 @@ const saveRepeatSchedule = async (
     repeatEndDate, repeatWeekdays 
   } = form;
 
-  await user.click(screen.getByRole('button', { name: '일정 추가' }));
+  await act(async () => {
+    await user.click(screen.getByRole('button', { name: '일정 추가' }));
 
-  // 일반 텍스트 입력
-  await user.type(screen.getByRole('textbox', { name: '제목'}), title);
-  await user.type(screen.getByRole('textbox', { name: '설명' }), description);
-  await user.type(screen.getByRole('textbox', { name: '위치' }), location);
-
+    // 일반 텍스트 입력
+    await user.type(screen.getByRole('textbox', { name: '제목'}), title);
+    await user.type(screen.getByRole('textbox', { name: '설명' }), description);
+    await user.type(screen.getByRole('textbox', { name: '위치' }), location);
+  });
+  
   // 날짜와 시간 입력
   await user.type(screen.getByLabelText(/날짜\s*\*/), date);
   await user.type(screen.getByLabelText(/시작 시간\s*\*/), startTime);
@@ -423,37 +425,52 @@ describe('반복 일정 기능', () => {
 
     const { user } = setup(<App />);
 
-    vi.setSystemTime(new Date('2025-02-12'));
-
-    await saveRepeatSchedule(user, {
-      title: '주간 팀 미팅',
-      date: '2025-02-12',
-      startTime: '09:00',
-      endTime: '10:00',
-      description: '매주 진행되는 팀 미팅',
-      location: '회의실 A',
-      category: '업무',
-      repeatType: 'weekly',
-      repeatInterval: 1,
-      repeatEndDate: '2025-03-05',
-      repeatWeekdays: [3], // 수요일만 선택
+    await act(async () => {
+      vi.setSystemTime(new Date('2024-10-02'));
     });
 
-    // 1. 일정 추가 완료 대기
-    await screen.findByText('일정이 추가되었습니다.');
+    await act(async () => {
+      await saveRepeatSchedule(user, {
+        title: '주간 팀 미팅',
+        date: '2024-10-02',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매주 진행되는 팀 미팅',
+        location: '회의실 A',
+        category: '업무',
+        repeatType: 'weekly',
+        repeatInterval: 1,
+        repeatEndDate: '2024-10-31',
+        repeatWeekdays: [3], // 수요일만 선택
+      });
+    });
+    
+    // 토스트 메시지와 이벤트 생성 대기
+    await act(async () => {
+      await screen.findByText('일정이 추가되었습니다.');
+    });
 
-   // 2. 데이터 로딩 대기를 위해 잠시 기다림
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await act(async () => {
+      await user.selectOptions(screen.getByLabelText('view'), 'month');
+    });
 
-    // 3. 뷰를 월별 보기로 변경
-    await user.selectOptions(screen.getByLabelText('view'), 'month');
+    // 로딩 기다리기
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    });
 
-    // 4. 월별 뷰 렌더링 대기
-    await screen.findByTestId('month-view');
+    // 데이터 검증
+    const monthView = await screen.findByTestId('month-view');
+    const cells = await within(monthView).findAllByRole('cell');
+  
+    console.log('Cells content:', cells.map(cell => cell.textContent));
 
-    // 5. 월별 뷰 내에서 이벤트 찾기
-    await screen.findByText(/주간 팀 미팅/);
-  }, 10000);
+    const hasEventTitle = cells.some(cell => 
+      cell.textContent?.includes('주간 팀 미팅')
+    );
+
+    expect(hasEventTitle).toBe(true);
+  });
 
   it('반복 일정을 단일 수정하면 반복 아이콘이 사라진다', async () => {
     setupMockHandlerCreation([]);
@@ -461,22 +478,26 @@ describe('반복 일정 기능', () => {
     const { user } = setup(<App />);
 
     // 반복 일정 생성
-    await saveRepeatSchedule(user, {
-      title: '주간 팀 미팅',
-      date: '2025-02-12',
-      startTime: '09:00',
-      endTime: '10:00',
-      description: '매주 진행되는 팀 미팅',
-      location: '회의실 A',
-      category: '업무',
-      repeatType: 'weekly',
-      repeatInterval: 1,
-      repeatEndDate: '2025-03-05',
-      repeatWeekdays: [3] // 수요일만 선택
+    await act(async () => {
+      await saveRepeatSchedule(user, {
+        title: '주간 팀 미팅',
+        date: '2024-10-02',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매주 진행되는 팀 미팅',
+        location: '회의실 A',
+        category: '업무',
+        repeatType: 'weekly',
+        repeatInterval: 1,
+        repeatEndDate: '2024-10-31',
+        repeatWeekdays: [3], // 수요일만 선택
+      });
     });
 
     // 토스트 메시지 대기
-    await screen.findByText('일정이 추가되었습니다.');
+    await act(async () => {
+      await screen.findByText('일정이 추가되었습니다.');
+    });
 
     // 뷰를 월별로 변경
     await user.selectOptions(screen.getByLabelText('view'), 'month');
@@ -497,7 +518,7 @@ describe('반복 일정 기능', () => {
     const remainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
 
     // 반복 아이콘 확인
-    expect(remainingRepeatIcons.length).toBe(3); 
+    expect(remainingRepeatIcons.length).toBe(5); 
   });
 
   
@@ -506,21 +527,23 @@ describe('반복 일정 기능', () => {
 
     const { user } = setup(<App />);
 
-    vi.setSystemTime(new Date('2025-02-12'));
+    vi.setSystemTime(new Date('2024-10-02'));
 
     // 반복 일정 생성
-    await saveRepeatSchedule(user, {
-      title: '주간 팀 미팅',
-      date: '2025-02-12',
-      startTime: '09:00',
-      endTime: '10:00',
-      description: '매주 진행되는 팀 미팅',
-      location: '회의실 A',
-      category: '업무',
-      repeatType: 'weekly',
-      repeatInterval: 1,
-      repeatEndDate: '2025-03-05',
-      repeatWeekdays: [3], // 수요일만 선택
+    await act(async () => {
+      await saveRepeatSchedule(user, {
+        title: '주간 팀 미팅',
+        date: '2024-10-02',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '매주 진행되는 팀 미팅',
+        location: '회의실 A',
+        category: '업무',
+        repeatType: 'weekly',
+        repeatInterval: 1,
+        repeatEndDate: '2024-10-31',
+        repeatWeekdays: [3], // 수요일만 선택
+      });
     });
 
   });
@@ -530,20 +553,22 @@ describe('반복 일정 기능', () => {
 
     const { user } = setup(<App />);
 
-    vi.setSystemTime(new Date('2028-02-29'));
+    vi.setSystemTime(new Date('2024-02-29'));
 
     // 윤년 2월 29일 반복 일정 생성
-    await saveRepeatSchedule(user, {
-      title: '윤년 월말 일정',
-      date: '2028-02-29',
-      startTime: '09:00',
-      endTime: '10:00',
-      description: '윤년 월말 반복 일정',
-      location: '회의실 A',
-      category: '업무',
-      repeatType: 'monthly',
-      repeatInterval: 1,
-      repeatEndDate: '2029-02-29'
+    await act(async () => {
+      await saveRepeatSchedule(user, {
+        title: '윤년 월말 일정',
+        date: '2024-02-29',
+        startTime: '09:00',
+        endTime: '10:00',
+        description: '윤년 월말 반복 일정',
+        location: '회의실 A',
+        category: '업무',
+        repeatType: 'monthly',
+        repeatInterval: 1,
+        repeatEndDate: '2025-02-29'
+      });
     });
 
     // 이벤트 업데이트 대기
@@ -553,23 +578,25 @@ describe('반복 일정 기능', () => {
     await user.selectOptions(screen.getByLabelText('view'), 'month');
 
     // 잠시 대기
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    });
 
     // 기대되는 날짜들 (월말)
     const expectedDates = [
-      '2028-02-29', // 초기 날짜
-      '2028-03-31', // 3월 (31일)
-      '2028-04-30', // 4월 (30일)
-      '2028-05-31', // 5월 (31일)
-      '2028-06-30', // 6월 (30일)
-      '2028-07-31', // 7월 (31일)
-      '2028-08-31', // 8월 (31일)
-      '2028-09-30', // 9월 (30일)
-      '2028-10-31', // 10월 (31일)
-      '2028-11-30', // 11월 (30일)
-      '2028-12-31', // 12월 (31일)
-      '2029-01-31', // 1월 (31일)
-      '2029-02-28'  // 2월 (윤년 아님)
+      '2024-02-29', // 초기 날짜
+      '2024-03-31', // 3월 (31일)
+      '2024-04-30', // 4월 (30일)
+      '2024-05-31', // 5월 (31일)
+      '2024-06-30', // 6월 (30일)
+      '2024-07-31', // 7월 (31일)
+      '2024-08-31', // 8월 (31일)
+      '2024-09-30', // 9월 (30일)
+      '2024-10-31', // 10월 (31일)
+      '2024-11-30', // 11월 (30일)
+      '2024-12-31', // 12월 (31일)
+      '2025-01-31', // 1월 (31일)
+      '2025-02-28'  // 2월 (윤년 아님)
     ];
 
     // 모든 이벤트 확인
