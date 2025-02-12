@@ -38,15 +38,13 @@ export function getFilteredEvents(
 ): Event[] {
   const searchedEvents = searchEvents(events, searchTerm);
 
-  let filteredEvents: Event[];
   if (view === 'week') {
-    filteredEvents = filterEventsByDateRangeAtWeek(searchedEvents, currentDate);
-  } else if (view === 'month') {
-    filteredEvents = filterEventsByDateRangeAtMonth(searchedEvents, currentDate);
-  } else {
-    filteredEvents = searchedEvents;
+    return filterEventsByDateRangeAtWeek(searchedEvents, currentDate);
   }
 
+  if (view === 'month') {
+    return filterEventsByDateRangeAtMonth(searchedEvents, currentDate);
+  }
 
   return searchedEvents;
 }

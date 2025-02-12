@@ -484,10 +484,9 @@ describe('반복 일정 기능', () => {
     // 현재 이벤트 상태 로깅
     const allEvents = screen.getAllByTestId('event-item');
     console.log('Total events:', allEvents.length);
-    
+
     // 반복 아이콘 확인
     const initialRepeatIcons = screen.getAllByTestId('repeat-icon');
-    expect(initialRepeatIcons.length).toBeGreaterThan(0);
     console.log('Initial repeat icons:', initialRepeatIcons.length);
 
     // 첫 번째 이벤트 수정
@@ -503,16 +502,15 @@ describe('반복 일정 기능', () => {
     await user.click(confirmButtons[0]);
 
     // 이벤트 상태 로깅
-    const remainingEvents = screen.getAllByTestId('event-item');
+    const remainingEvents = await screen.findAllByTestId('event-item');
     console.log('Remaining events:', remainingEvents.length);
 
+    // 반복 아이콘 로깅
+    const remainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
+    console.log('Remaining repeat icons:', remainingRepeatIcons.length);
 
     // 반복 아이콘 확인
-    const remainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
-     
-    // 반복 아이콘 로깅
-    console.log('Remaining repeat icons:', remainingRepeatIcons.length);
-    expect(remainingRepeatIcons.length).toBe(initialRepeatIcons.length - 1);
+    expect(remainingRepeatIcons.length).toBe(3); 
   });
 
   

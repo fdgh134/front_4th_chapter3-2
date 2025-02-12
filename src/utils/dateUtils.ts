@@ -51,13 +51,8 @@ export function getWeeksAtMonth(currentDate: Date) {
   return weeks;
 }
 
-export function getEventsForDay(events: Event[], day: number, currentDate: Date): Event[] {
-  return events.filter((event) => {
-    const eventDate = new Date(event.date);
-    return eventDate.getFullYear() === currentDate.getFullYear() && 
-           eventDate.getMonth() === currentDate.getMonth() && 
-           eventDate.getDate() === day;
-  });
+export function getEventsForDay(events: Event[], date: number): Event[] {
+  return events.filter((event) => new Date(event.date).getDate() === date);
 }
 
 export function formatWeek(targetDate: Date) {
@@ -107,16 +102,9 @@ export function fillZero(value: number, size = 2) {
 }
 
 export function formatDate(currentDate: Date, day?: number) {
-  // 현재 날짜의 연도와 월을 사용하여 새 날짜 객체 생성
-  const dateToFormat = new Date(
-    currentDate.getFullYear(), 
-    currentDate.getMonth(), 
-    day ?? currentDate.getDate()
-  );
-
   return [
-    dateToFormat.getFullYear(),
-    fillZero(dateToFormat.getMonth() + 1),
-    fillZero(dateToFormat.getDate()),
+    currentDate.getFullYear(),
+    fillZero(currentDate.getMonth() + 1),
+    fillZero(day ?? currentDate.getDate()),
   ].join('-');
 }

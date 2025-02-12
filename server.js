@@ -129,7 +129,7 @@ app.post('/api/events', async (req, res) => {
       events: [...events.events, ...recurringEvents]
     };
     saveEvents(updatedEvents);
-    res.status(201).json(recurringEvents);
+    res.status(201).json(recurringEvents[0]);
   } else {
     // 단일 일정인 경우
     const updatedEvents = {
@@ -142,12 +142,19 @@ app.post('/api/events', async (req, res) => {
 
 // 이벤트 수정 API
 app.put('/api/events/:id', async (req, res) => {
+  console.log('PUT Request:', { 
+    params: req.params, 
+    body: req.body, 
+    query: req.query 
+  });
+
   const events = await getEvents();
   const id = req.params.id;
   const event = events.events.find(e => e.id === id);
   const { updateType = 'single' } = req.query;
 
   if (!event) {
+    console.log(`Event not found: ${id}`);
     return res.status(404).send('Event not found');
   }
 
@@ -227,10 +234,10 @@ app.put('/api/events/:id', async (req, res) => {
     const eventIndex = updatedEvents.findIndex(e => e.id === id);
     if (eventIndex > -1) {
       updatedEvents[eventIndex] = { 
-      ...updatedEvents[eventIndex], 
-      ...req.body,
-      repeat: { type: 'none', interval: 1 } // 반복 설정 제거
-    };
+        ...updatedEvents[eventIndex], 
+        ...req.body,
+        repeat: { type: 'none', interval: 1 } // 반복 설정 제거
+      };
     }    
   }
 
@@ -238,6 +245,7 @@ app.put('/api/events/:id', async (req, res) => {
     events: updatedEvents
   };
   saveEvents(updatedEventData);
+  
   res.json(updatedEvents.find(e => e.id === id));
 });
 

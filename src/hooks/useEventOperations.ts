@@ -28,7 +28,21 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const saveEvent = async (eventData: Event | EventForm, updateType?: 'single' | 'future' | 'all') => {
     try {
+      console.log('Saving event:', {
+        eventData,
+        updateType,
+        editing,
+        editingEventId: editing ? (eventData as Event).id : undefined
+      });
+
       let response;
+      const url = editing 
+      ? `/api/events/${(eventData as Event).id}?updateType=${updateType || 'single'}` 
+      : '/api/events';
+
+      console.log('Request URL:', url);
+      console.log('Request Method:', editing ? 'PUT' : 'POST');
+      
       if (editing) {
         response = await fetch(`/api/events/${(eventData as Event).id}?updateType=${updateType}`, {
           method: 'PUT',
@@ -42,7 +56,14 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           body: JSON.stringify(eventData),
         });
       }
-      
+
+      // 응답 본문 로깅
+      const responseText = await response.text();
+      console.log('Server response:', {
+        status: response.status,
+        body: responseText
+      });
+
       if (!response.ok) {
         throw new Error('Failed to save event');
       }

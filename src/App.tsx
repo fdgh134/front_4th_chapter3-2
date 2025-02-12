@@ -147,6 +147,12 @@ function App() {
         });
         return;
       }
+
+      console.log('Adding/Updating event:', {
+        editingEvent,
+        updateType,
+        isRepeating
+      });
   
       const eventData: Event | EventForm = {
         id: editingEvent ? editingEvent.id : undefined,
@@ -176,14 +182,14 @@ function App() {
       }
 
       await saveEvent(eventData, editingEvent ? updateType : undefined);
-        if (editingEvent && updateType === 'single') {
-          const updatedEvent = {
-            ...eventData,
-            repeat: { type: 'none', interval: 1 } // 단일 일정으로 변경
-          };
-          editEvent(updatedEvent as Event); // 폼에 업데이트된 정보 설정
-        }
-        setIsUpdateDialogOpen(false);  
+      if (editingEvent && updateType === 'single') {
+        const updatedEvent = {
+          ...eventData,
+          repeat: { type: 'none', interval: 1 } // 단일 일정으로 변경
+        };
+        editEvent(updatedEvent as Event); // 폼에 업데이트된 정보 설정
+      }
+      setIsUpdateDialogOpen(false);  
       
     } else if (action === 'delete' && selectedEventId) {
       await deleteEvent(selectedEventId, updateType);
