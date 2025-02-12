@@ -11,17 +11,6 @@ const __dirname = path.resolve();
 
 app.use(express.json());
 
-// 특정 날짜의 요일 확인하는 함수
-const getDayofWeek = (date) => {
-  return new Date(date).getDay();
-};
-
-// 날짜가 선택된 요일에 해당하는지 확인하는 함수
-const isSelectedDay = (date, weekdays) => {
-  const dayOfWeek = getDayofWeek(date);
-  return weekdays.includes(dayOfWeek)
-};
-
 // 특정한 날짜를 처리하는 함수
 const adjustDate = (date, repeatType) => {
   const d = new Date(date);
@@ -142,19 +131,12 @@ app.post('/api/events', async (req, res) => {
 
 // 이벤트 수정 API
 app.put('/api/events/:id', async (req, res) => {
-  console.log('PUT Request:', { 
-    params: req.params, 
-    body: req.body, 
-    query: req.query 
-  });
-
   const events = await getEvents();
   const id = req.params.id;
   const event = events.events.find(e => e.id === id);
   const { updateType = 'single' } = req.query;
 
   if (!event) {
-    console.log(`Event not found: ${id}`);
     return res.status(404).send('Event not found');
   }
 
@@ -245,7 +227,7 @@ app.put('/api/events/:id', async (req, res) => {
     events: updatedEvents
   };
   saveEvents(updatedEventData);
-  
+
   res.json(updatedEvents.find(e => e.id === id));
 });
 

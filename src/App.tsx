@@ -147,12 +147,6 @@ function App() {
         });
         return;
       }
-
-      console.log('Adding/Updating event:', {
-        editingEvent,
-        updateType,
-        isRepeating
-      });
   
       const eventData: Event | EventForm = {
         id: editingEvent ? editingEvent.id : undefined,
@@ -611,7 +605,7 @@ function App() {
                               {holiday}
                             </Text>
                           )}
-                          {getEventsForDay(filteredEvents, day, currentDate).map((event) => renderCalendarEvent(event, true))}
+                          {getEventsForDay(filteredEvents, day).map((event) => renderCalendarEvent(event, true))}
                         </>
                       )}
                     </Td>
