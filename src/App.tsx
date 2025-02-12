@@ -138,6 +138,19 @@ function App() {
         return;
       }
 
+      // 시간 유효성 검사 추가
+      const eventDateTime = new Date(`${date}T${startTime}`);
+      const now = new Date();
+      if (eventDateTime < now) {
+        toast({
+          title: '현재 시간 이후로만 일정 등록이 가능합니다.',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
       if (startTimeError || endTimeError) {
         toast({
           title: '시간 설정을 확인해주세요.',

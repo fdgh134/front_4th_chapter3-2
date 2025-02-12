@@ -28,7 +28,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const saveEvent = async (eventData: Event | EventForm, updateType?: 'single' | 'future' | 'all') => {
     try {
-      let response;      
+      let response;
       if (editing) {
         response = await fetch(`/api/events/${(eventData as Event).id}?updateType=${updateType}`, {
           method: 'PUT',
@@ -44,7 +44,8 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to save event');
+        const errorData = await response.json();
+        throw new Error(errorData.message || '일정 저장에 실패했습니다.');
       }
 
       await fetchEvents();
