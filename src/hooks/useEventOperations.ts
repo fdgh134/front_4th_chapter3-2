@@ -42,7 +42,7 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
           body: JSON.stringify(eventData),
         });
       }
-
+      
       if (!response.ok) {
         throw new Error('Failed to save event');
       }

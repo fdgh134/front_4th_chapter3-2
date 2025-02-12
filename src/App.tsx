@@ -158,7 +158,9 @@ function App() {
         location,
         category,
         repeat: {
-          type: isRepeating ? repeatType : 'none',
+          type: editingEvent && updateType === 'single' 
+          ? 'none' 
+          : (isRepeating ? repeatType : 'none'),
           interval: repeatInterval,
           endDate: repeatEndDate || undefined,
           weekdays: repeatWeekdays,
@@ -220,9 +222,9 @@ function App() {
               <Text mb={4}>{description}</Text>
               <RadioGroup value={updateType} onChange={(value: 'single' | 'future' | 'all') => setUpdateType(value)}>
                 <Stack direction="column">
-                  <Radio value="single">이 일정만</Radio>
-                  <Radio value="future">이 일정 및 향후 일정</Radio>
-                  <Radio value="all">모든 반복 일정</Radio>
+                  <Radio value="single" data-testid="radio-update-single">이 일정만</Radio>
+                  <Radio value="future" data-testid="radio-update-future">이 일정 및 향후 일정</Radio>
+                  <Radio value="all" data-testid="radio-update-all">모든 반복 일정</Radio>
                 </Stack>
               </RadioGroup>
             </AlertDialogBody>
@@ -325,7 +327,6 @@ function App() {
           aria-label="반복 일정"
           isChecked={isRepeating} 
           onChange={(e) => {
-            console.log('Checkbox changed:', e.target.checked); // 디버그 로그
             setIsRepeating(e.target.checked)
           }}
         >
@@ -375,6 +376,7 @@ function App() {
                 {weekDays.map((day, index) => (
                   <Checkbox
                     key={day}
+                    data-testid={`weekday-checkbox-${day}`} 
                     isChecked={repeatWeekdays.includes(index)}
                     onChange={(e) => {
                       if (e.target.checked) {
@@ -456,10 +458,10 @@ function App() {
   const renderEvent = (event: Event) => {
     const isNotified = notifiedEvents.includes(event.id);
     const isRepeating = event.repeat?.type !== 'none';
-
     return (
       <Box
         key={`calendar-event-${event.id}`}
+        data-testid="event-item"
         p={4}
         my={2}
         bg='white'
@@ -473,8 +475,9 @@ function App() {
           <VStack align="start" spacing={1}>
             <HStack>
               {isNotified && <BellIcon color="red.500" />}
-              {isRepeating && <RepeatIcon color="blue.500" />}
+              {isRepeating && <RepeatIcon data-testid="repeat-icon" color="blue.500" />}
               <Text
+                data-testid="event-title"
                 fontWeight={isNotified ? 'bold' : 'normal'}
                 color={isNotified ? 'red.500' : 'inherit'}
               >
@@ -489,7 +492,7 @@ function App() {
             {event.location && <Text fontSize="sm">{event.location}</Text>}
             <Text fontSize="sm">카테고리: {event.category}</Text>
             {isRepeating && (
-              <Text fontSize="sm">
+              <Text fontSize="sm" data-testid="repeat-text">
                 반복: {event.repeat.interval}
                 {event.repeat.type === 'daily' && '일'}
                 {event.repeat.type === 'weekly' && '주'}
@@ -602,7 +605,7 @@ function App() {
                               {holiday}
                             </Text>
                           )}
-                          {getEventsForDay(filteredEvents, day).map((event) => renderCalendarEvent(event, true))}
+                          {getEventsForDay(filteredEvents, day, currentDate).map((event) => renderCalendarEvent(event, true))}
                         </>
                       )}
                     </Td>

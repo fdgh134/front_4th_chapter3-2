@@ -1,3 +1,79 @@
 {
-  "events": []
+  "events": [
+    {
+      "id": "54e3eecc-3eb6-4f2f-9f2a-a7a55b2478be",
+      "title": "반복테스트",
+      "date": "2025-02-26",
+      "startTime": "09:42",
+      "endTime": "10:42",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "none",
+        "interval": 1
+      },
+      "notificationTime": 10
+    },
+    {
+      "id": "26fbbb9b-87c3-4ff9-b907-cb260f4295aa",
+      "title": "반복테스트2",
+      "date": "2025-02-13",
+      "startTime": "13:53",
+      "endTime": "14:53",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "weekly",
+        "interval": 1,
+        "endDate": "2025-02-27",
+        "weekdays": [
+          4
+        ],
+        "id": "8a8dffcf-4e7c-401e-ad91-35685e6e91b5"
+      },
+      "notificationTime": 10
+    },
+    {
+      "id": "e7cfad09-e88a-4500-8ca1-dd64e541f601",
+      "title": "반복테스트2",
+      "date": "2025-02-20",
+      "startTime": "13:53",
+      "endTime": "14:53",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "weekly",
+        "interval": 1,
+        "endDate": "2025-02-27",
+        "weekdays": [
+          4
+        ],
+        "id": "8a8dffcf-4e7c-401e-ad91-35685e6e91b5"
+      },
+      "notificationTime": 10
+    },
+    {
+      "id": "f25e3377-84b0-42a8-8d21-bb6d10d5e46a",
+      "title": "반복테스트2",
+      "date": "2025-02-27",
+      "startTime": "13:53",
+      "endTime": "14:53",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "weekly",
+        "interval": 1,
+        "endDate": "2025-02-27",
+        "weekdays": [
+          4
+        ],
+        "id": "8a8dffcf-4e7c-401e-ad91-35685e6e91b5"
+      },
+      "notificationTime": 10
+    }
+  ]
 }

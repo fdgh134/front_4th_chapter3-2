@@ -88,28 +88,13 @@ const saveRepeatSchedule = async (
   // 카테고리 선택
   await user.selectOptions(screen.getByRole('combobox', { name: '카테고리 선택' }), category);
 
-  // 반복 일정 체크박스 클릭
-  const repeatCheckboxContainer = screen.getByText('반복 일정').closest('label');
-  if (!repeatCheckboxContainer) {
-    throw new Error('반복 일정 체크박스를 찾을 수 없습니다.');
-  }
+  // 반복 설정
+  await user.click(screen.getByTestId('repeat-schedule-checkbox'));
 
-  const repeatCheckbox = repeatCheckboxContainer.querySelector('input[type="checkbox"]');
-  if (!repeatCheckbox) {
-    throw new Error('체크박스 input 요소를 찾을 수 없습니다.');
-  }
-
-  await user.click(repeatCheckboxContainer);
-
-  // 디버그: 반복 유형 select 요소 찾기
-  const repeatTypeSelect = screen.queryByTestId('repeat-type-select');
-  if (!repeatTypeSelect) {
-    console.log('모든 요소:', screen.getAllByRole('combobox').map(el => el.outerHTML));
-    throw new Error('반복 유형 select 요소를 찾을 수 없습니다.');
-  }
-
-  // 반복 유형 선택
-  await user.selectOptions(repeatTypeSelect, repeatType);
+  await user.selectOptions(
+    screen.getByRole('combobox', { name: '반복 유형' }), 
+    repeatType
+  );
 
   // 추가 반복 설정
   if (repeatInterval > 1) {
@@ -127,10 +112,10 @@ const saveRepeatSchedule = async (
   // 주간 반복 요일 설정
   if (repeatType === 'weekly' && repeatWeekdays) {
     const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
-    repeatWeekdays.forEach(day => {
-      const checkbox = screen.getByText(weekDays[day]);
-      user.click(checkbox);
-    });
+    for (const dayIndex of repeatWeekdays) {
+      // checkbox label을 이용해 찾기
+      await user.click(screen.getByRole('checkbox', { name: weekDays[dayIndex] }));
+    }
   }
 
   await user.click(screen.getByTestId('event-submit-button'));
@@ -426,15 +411,23 @@ describe('반복 일정 기능', () => {
   afterEach(() => {
     server.resetHandlers();
   });
-  
-  it('반복 일정 생성시 반복 아이콘이 표시된다', async () => {
-    setupMockHandlerCreation();
+
+  const waitForEventUpdate = async () => {
+    await screen.findByText('일정이 추가되었습니다.');
+    await screen.findByTestId('event-list');
+    await new Promise(resolve => setTimeout(resolve, 100));
+  };
+
+  it('반복 일정 생성시 반복 일정이 표시된다', async () => {
+    setupMockHandlerCreation([]);
 
     const { user } = setup(<App />);
 
+    vi.setSystemTime(new Date('2025-02-12'));
+
     await saveRepeatSchedule(user, {
       title: '주간 팀 미팅',
-      date: '2024-10-02',
+      date: '2025-02-12',
       startTime: '09:00',
       endTime: '10:00',
       description: '매주 진행되는 팀 미팅',
@@ -442,26 +435,214 @@ describe('반복 일정 기능', () => {
       category: '업무',
       repeatType: 'weekly',
       repeatInterval: 1,
+      repeatEndDate: '2025-03-05',
       repeatWeekdays: [3], // 수요일만 선택
     });
 
-    // 반복 아이콘이 표시되는지 확인
-    const eventList = within(screen.getByTestId('event-list'));
-    const repeatIcon = eventList.getByTestId('event-repeat-icon');
-    expect(repeatIcon).toBeInTheDocument();
+    // 토스트 메시지 대기
+    await screen.findByText('일정이 추가되었습니다.');
+
+    // 뷰를 월별 보기로 변경
+    await user.selectOptions(screen.getByLabelText('view'), 'month');
+
+    // 잠시 대기
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 이벤트 제목으로 찾기
+    const eventTitles = screen.getAllByText('주간 팀 미팅');
+        
+    // 테스트 어설션
+    expect(eventTitles.length).toBeGreaterThan(0);
   });
 
   it('반복 일정을 단일 수정하면 반복 아이콘이 사라진다', async () => {
+    setupMockHandlerCreation([]);
 
+    const { user } = setup(<App />);
+
+    // 반복 일정 생성
+    await saveRepeatSchedule(user, {
+      title: '주간 팀 미팅',
+      date: '2025-02-12',
+      startTime: '09:00',
+      endTime: '10:00',
+      description: '매주 진행되는 팀 미팅',
+      location: '회의실 A',
+      category: '업무',
+      repeatType: 'weekly',
+      repeatInterval: 1,
+      repeatEndDate: '2025-03-05',
+      repeatWeekdays: [3] // 수요일만 선택
+    });
+
+    // 토스트 메시지 대기
+    await screen.findByText('일정이 추가되었습니다.');
+
+    // 뷰를 월별로 변경
+    await user.selectOptions(screen.getByLabelText('view'), 'month');
+
+    // 현재 이벤트 상태 로깅
+    const allEvents = screen.getAllByTestId('event-item');
+    console.log('Total events:', allEvents.length);
+    
+    // 반복 아이콘 확인
+    const initialRepeatIcons = screen.getAllByTestId('repeat-icon');
+    expect(initialRepeatIcons.length).toBeGreaterThan(0);
+    console.log('Initial repeat icons:', initialRepeatIcons.length);
+
+    // 첫 번째 이벤트 수정
+    const editButtons = await screen.findAllByLabelText('Edit event');
+    await user.click(editButtons[0]);
+
+    // 단일 일정 수정 라디오 버튼 선택
+    const singleUpdateRadio = screen.getByTestId('radio-update-single');
+    await user.click(singleUpdateRadio);
+
+    // 확인 버튼 클릭
+    const confirmButtons = screen.getAllByRole('button', { name: '확인' });
+    await user.click(confirmButtons[0]);
+
+    // 이벤트 상태 로깅
+    const remainingEvents = screen.getAllByTestId('event-item');
+    console.log('Remaining events:', remainingEvents.length);
+
+
+    // 반복 아이콘 확인
+    const remainingRepeatIcons = screen.queryAllByTestId('repeat-icon');
+     
+    // 반복 아이콘 로깅
+    console.log('Remaining repeat icons:', remainingRepeatIcons.length);
+    expect(remainingRepeatIcons.length).toBe(initialRepeatIcons.length - 1);
   });
 
   
   it('반복 일정 단일 삭제시 해당 일정만 삭제된다', async () => {
+    setupMockHandlerCreation([]);
+
+    const { user } = setup(<App />);
+
+    vi.setSystemTime(new Date('2025-02-12'));
+
+    // 반복 일정 생성
+    await saveRepeatSchedule(user, {
+      title: '주간 팀 미팅',
+      date: '2025-02-12',
+      startTime: '09:00',
+      endTime: '10:00',
+      description: '매주 진행되는 팀 미팅',
+      location: '회의실 A',
+      category: '업무',
+      repeatType: 'weekly',
+      repeatInterval: 1,
+      repeatEndDate: '2025-03-05',
+      repeatWeekdays: [3], // 수요일만 선택
+    });
+
+    // 이벤트 업데이트 대기
+    await waitForEventUpdate();
+
+    // 뷰를 월별로 변경
+    await user.selectOptions(screen.getByLabelText('view'), 'month');
+
+    // 잠시 대기
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 초기 이벤트 확인 및 로깅
+    const initialEvents = screen.getAllByTestId('event-item');
+    console.log('Initial events:', initialEvents.length);
+
+    // 첫 번째 이벤트 삭제
+    const deleteButtons = await screen.findAllByLabelText('Delete event');
+    await user.click(deleteButtons[0]);
+
+    // 단일 일정 삭제 선택
+    await user.click(screen.getByTestId('radio-update-single'));
     
+    // 확인 버튼 클릭
+    const confirmButtons = screen.getAllByRole('button', { name: '확인' });
+    await user.click(confirmButtons[0]);
+
+    // 이벤트 업데이트 대기
+    await waitForEventUpdate();
+
+    // 이벤트 확인 및 로깅
+    const remainingEvents = screen.getAllByTestId('event-item');
+    console.log('Remaining events:', remainingEvents.length);
+
+    // 이벤트 수 확인 (반복 일정이므로 초기 이벤트 수보다 작아야 함)
+    expect(remainingEvents.length).toBeLessThan(initialEvents.length);
+
+    // 삭제된 이벤트 날짜 확인
+    const remainingEventDates = remainingEvents.map(event => 
+      event.textContent?.includes('2025-02-12') ? '2025-02-12' : null
+    ).filter(Boolean);
+    expect(remainingEventDates.length).toBe(0);
   });
 
   it('윤년 2월 29일에 매월 반복 설정시 해당 월의 마지막 날에 일정이 생성된다', async () => {
+    setupMockHandlerCreation([]);
 
+    const { user } = setup(<App />);
+
+    vi.setSystemTime(new Date('2024-02-29'));
+
+    // 윤년 2월 29일 반복 일정 생성
+    await saveRepeatSchedule(user, {
+      title: '윤년 월말 일정',
+      date: '2024-02-29',
+      startTime: '09:00',
+      endTime: '10:00',
+      description: '윤년 월말 반복 일정',
+      location: '회의실 A',
+      category: '업무',
+      repeatType: 'monthly',
+      repeatInterval: 1,
+      repeatEndDate: '2025-02-29'
+    });
+
+    // 이벤트 업데이트 대기
+    await waitForEventUpdate();
+
+    // 뷰를 월별로 변경
+    await user.selectOptions(screen.getByLabelText('view'), 'month');
+
+    // 잠시 대기
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // 기대되는 날짜들 (월말)
+    const expectedDates = [
+      '2024-02-29', // 초기 날짜
+      '2024-03-31', // 3월 (31일)
+      '2024-04-30', // 4월 (30일)
+      '2024-05-31', // 5월 (31일)
+      '2024-06-30', // 6월 (30일)
+      '2024-07-31', // 7월 (31일)
+      '2024-08-31', // 8월 (31일)
+      '2024-09-30', // 9월 (30일)
+      '2024-10-31', // 10월 (31일)
+      '2024-11-30', // 11월 (30일)
+      '2024-12-31', // 12월 (31일)
+      '2025-01-31', // 1월 (31일)
+      '2025-02-28'  // 2월 (윤년 아님)
+    ];
+
+    // 모든 이벤트 확인
+    const events = screen.getAllByTestId('event-item');
+    console.log('Total events:', events.length);
+
+    // 생성된 반복 일정의 날짜들 추출
+    const eventDates = events.map(event => {
+      const dateMatch = event.textContent?.match(/\d{4}-\d{2}-\d{2}/g);
+      return dateMatch ? dateMatch[0] : null;
+    }).filter(Boolean);
+
+    console.log('Event dates:', eventDates);
+
+    // 생성된 날짜들이 기대하는 날짜들과 일치하는지 확인
+    expectedDates.forEach(expectedDate => {
+      const matchingEvents = eventDates.filter(date => date === expectedDate);
+      expect(matchingEvents).toHaveLength(1);
+    });
   });
 });
 

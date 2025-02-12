@@ -13,9 +13,42 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
     }),
     http.post('/api/events', async ({ request }) => {
       const newEvent = (await request.json()) as Event;
-      newEvent.id = String(mockEvents.length + 1); // 간단한 ID 생성
-      mockEvents.push(newEvent);
-      return HttpResponse.json(newEvent, { status: 201 });
+
+      // 반복 일정인 경우 처리
+      if (newEvent.repeat.type !== 'none') {
+        const startDate = new Date(newEvent.date);
+        const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : new Date(startDate);
+        const recurringEvents: Event[] = [];
+
+        let currentDate = new Date(startDate);
+        const repeatId = Math.random().toString(); // 반복 일정 그룹화 ID
+
+        while (currentDate <= endDate) {
+          // 주간 반복인 경우 요일 체크
+          if (newEvent.repeat.type === 'weekly' && 
+              newEvent.repeat.weekdays?.includes(currentDate.getDay())) {
+            recurringEvents.push({
+              ...newEvent,
+              id: Math.random().toString(),
+              date: currentDate.toISOString().split('T')[0],
+              repeat: {
+                ...newEvent.repeat,
+                id: repeatId
+              }
+            });
+          }
+
+          // 다음 날짜 계산 (주간 반복)
+          currentDate.setDate(currentDate.getDate() + 7);
+        } 
+        mockEvents.push(...recurringEvents);
+        return HttpResponse.json(recurringEvents[0], { status: 201 });
+      } else {
+        // 단일 일정 처리
+        newEvent.id = String(mockEvents.length + 1); // 간단한 ID 생성
+        mockEvents.push(newEvent);
+        return HttpResponse.json(newEvent, { status: 201 });
+      }
     })
   );
 };
