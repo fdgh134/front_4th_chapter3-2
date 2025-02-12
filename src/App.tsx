@@ -458,6 +458,7 @@ function App() {
           <Text
             fontSize="sm"
             noOfLines={1}
+            data-testid="event-title"
             fontWeight={isNotified ? 'bold' : 'normal'}
             color={isNotified ? 'red.500' : 'inherit'}
           >

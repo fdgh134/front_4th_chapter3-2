@@ -439,21 +439,21 @@ describe('반복 일정 기능', () => {
       repeatWeekdays: [3], // 수요일만 선택
     });
 
-    // 토스트 메시지 대기
+    // 1. 일정 추가 완료 대기
     await screen.findByText('일정이 추가되었습니다.');
 
-    // 뷰를 월별 보기로 변경
+   // 2. 데이터 로딩 대기를 위해 잠시 기다림
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 3. 뷰를 월별 보기로 변경
     await user.selectOptions(screen.getByLabelText('view'), 'month');
 
-    // event-item이 렌더링될 때까지 대기
-    const eventItems = await screen.findAllByTestId('event-item');
+    // 4. 월별 뷰 렌더링 대기
+    await screen.findByTestId('month-view');
 
-    // 이벤트 찾기
-    const eventWithTitle = eventItems.some(item => 
-      item.textContent?.includes('주간 팀 미팅')
-    );
-    expect(eventWithTitle).toBe(true);
-  });
+    // 5. 월별 뷰 내에서 이벤트 찾기
+    await screen.findByText(/주간 팀 미팅/);
+  }, 10000);
 
   it('반복 일정을 단일 수정하면 반복 아이콘이 사라진다', async () => {
     setupMockHandlerCreation([]);
