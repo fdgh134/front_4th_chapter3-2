@@ -17,50 +17,57 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       // 반복 일정인 경우 처리
       if (newEvent.repeat.type !== 'none') {
         const startDate = new Date(newEvent.date);
-        const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
+        const endDate = newEvent.repeat.endDate 
+          ? new Date(newEvent.repeat.endDate) 
+          : new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
+
         const recurringEvents: Event[] = [];
 
         let currentDate = new Date(startDate);
         const repeatId = Math.random().toString(); // 반복 일정 그룹화 ID
 
         while (currentDate <= endDate) {
-          // 월별 반복의 경우 항상 월말 날짜에 이벤트 생성
-          if (newEvent.repeat.type === 'monthly') {
-            // 현재 월의 마지막 날 계산
-            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-            
-            recurringEvents.push({
-              ...newEvent,
-              id: Math.random().toString(),
-              date: lastDayOfMonth.toISOString().split('T')[0],
-              repeat: {
-                ...newEvent.repeat,
-                id: repeatId
+           // 반복 타입에 따른 이벤트 생성 처리
+           switch (newEvent.repeat.type) {
+            case 'weekly': {
+              // 주간 반복: weekdays가 있고 해당 요일이 선택된 경우만 생성
+              const weekdays = newEvent.repeat.weekdays || [];
+              if (weekdays.length > 0 && weekdays.includes(currentDate.getDay())) {
+                recurringEvents.push({
+                  ...newEvent,
+                  id: Math.random().toString(),
+                  date: currentDate.toISOString().split('T')[0],
+                  repeat: { ...newEvent.repeat, id: repeatId }
+                });
               }
-            });
-          }
-          // 다른 반복 타입
-          else if (newEvent.repeat.type === 'weekly' && 
-              newEvent.repeat.weekdays?.includes(currentDate.getDay())) {
-            recurringEvents.push({
-              ...newEvent,
-              id: Math.random().toString(),
-              date: currentDate.toISOString().split('T')[0],
-              repeat: {
-                ...newEvent.repeat,
-                id: repeatId
-              }
-            });
-          } else if (newEvent.repeat.type !== 'weekly') {
-            recurringEvents.push({
-              ...newEvent,
-              id: Math.random().toString(),
-              date: currentDate.toISOString().split('T')[0],
-              repeat: {
-                ...newEvent.repeat,
-                id: repeatId
-              }
-            });
+              break;
+            }
+            case 'monthly': {
+              // 월간 반복: 해당 월의 마지막 날짜 계산
+              const lastDayOfMonth = new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth() + 1,
+                0
+              );
+              recurringEvents.push({
+                ...newEvent,
+                id: Math.random().toString(),
+                date: lastDayOfMonth.toISOString().split('T')[0],
+                repeat: { ...newEvent.repeat, id: repeatId }
+              });
+              break;
+            }
+            case 'daily':
+            case 'yearly': {
+              // 일간, 연간 반복: 매 날짜마다 생성
+              recurringEvents.push({
+                ...newEvent,
+                id: Math.random().toString(),
+                date: currentDate.toISOString().split('T')[0],
+                repeat: { ...newEvent.repeat, id: repeatId }
+              });
+              break;
+            }
           }
 
           // 다음 날짜 계산
