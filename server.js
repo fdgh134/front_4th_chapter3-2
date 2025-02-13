@@ -14,14 +14,14 @@ app.use(express.json());
 // 특정한 날짜를 처리하는 함수
 const adjustDate = (date, repeatType) => {
   const d = new Date(date);
-  const dat = d.getDate();
+  const day = d.getDate();
   const month = d.getMonth();
   const year = d.getFullYear();
 
   // 월말 날짜(28일 이후) 처리
   if (day > 28) {
     const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-    if (dat > lastDayOfMonth) {
+    if (day > lastDayOfMonth) {
       d.setDate(lastDayOfMonth);
     }
   }
@@ -60,12 +60,14 @@ app.get('/api/events', async (_, res) => {
 app.post('/api/events', async (req, res) => {
   const events = await getEvents();
   const newEvent = { id: randomUUID(), ...req.body };
-  
+
   // 반복 일정인 경우
   if (newEvent.repeat.type !== 'none') {
     const repeatId = randomUUID(); // 반복 일정 그룹화를 위한 ID
     const startDate = new Date(newEvent.date);
-    const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : getDefaultEndDate(startDate);
+    const endDate = newEvent.repeat.endDate
+      ? new Date(newEvent.repeat.endDate)
+      : getDefaultEndDate(startDate);
     const recurringEvents = [];
     let currentDate = new Date(startDate);
 
@@ -79,8 +81,8 @@ app.post('/api/events', async (req, res) => {
             date: currentDate.toISOString().split('T')[0],
             repeat: {
               ...newEvent.repeat,
-              id: repeatId // 반복 일정 그룹 ID
-            }
+              id: repeatId, // 반복 일정 그룹 ID
+            },
           });
         }
       } else {
@@ -90,8 +92,8 @@ app.post('/api/events', async (req, res) => {
           date: currentDate.toISOString().split('T')[0],
           repeat: {
             ...newEvent.repeat,
-            id: repeatId // 반복 일정 그룹 ID
-          }
+            id: repeatId, // 반복 일정 그룹 ID
+          },
         });
       }
 
@@ -101,7 +103,7 @@ app.post('/api/events', async (req, res) => {
           currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
           break;
         case 'weekly':
-          currentDate.setDate(currentDate.getDate() + (7 * newEvent.repeat.interval));
+          currentDate.setDate(currentDate.getDate() + 7 * newEvent.repeat.interval);
           break;
         case 'monthly':
           currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
@@ -115,14 +117,14 @@ app.post('/api/events', async (req, res) => {
     }
 
     const updatedEvents = {
-      events: [...events.events, ...recurringEvents]
+      events: [...events.events, ...recurringEvents],
     };
     saveEvents(updatedEvents);
     res.status(201).json(recurringEvents[0]);
   } else {
     // 단일 일정인 경우
     const updatedEvents = {
-      events: [...events.events, newEvent]
+      events: [...events.events, newEvent],
     };
     saveEvents(updatedEvents);
     res.status(201).json(newEvent);
@@ -133,7 +135,7 @@ app.post('/api/events', async (req, res) => {
 app.put('/api/events/:id', async (req, res) => {
   const events = await getEvents();
   const id = req.params.id;
-  const event = events.events.find(e => e.id === id);
+  const event = events.events.find((e) => e.id === id);
   const { updateType = 'single' } = req.query;
 
   if (!event) {
@@ -149,12 +151,12 @@ app.put('/api/events/:id', async (req, res) => {
     // 먼저 기존의 반복 일정 제거
     if (updateType === 'future') {
       // 현재 일정 포함 이후 일정만 제거
-      updatedEvents = updatedEvents.filter(e => 
-        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
+      updatedEvents = updatedEvents.filter(
+        (e) => !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
       );
     } else if (updateType === 'all') {
       // 모든 반복 일정 제거
-      updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
+      updatedEvents = updatedEvents.filter((e) => e.repeat?.id !== repeatId);
     }
 
     // 새로운 반복 ID 생성
@@ -176,8 +178,8 @@ app.put('/api/events/:id', async (req, res) => {
             date: currentDate.toISOString().split('T')[0],
             repeat: {
               ...repeat,
-              id: newRepeatId
-            }
+              id: newRepeatId,
+            },
           });
         }
       } else {
@@ -188,8 +190,8 @@ app.put('/api/events/:id', async (req, res) => {
           date: currentDate.toISOString().split('T')[0],
           repeat: {
             ...repeat,
-            id: newRepeatId
-          }
+            id: newRepeatId,
+          },
         });
       }
 
@@ -199,7 +201,7 @@ app.put('/api/events/:id', async (req, res) => {
           currentDate.setDate(currentDate.getDate() + repeat.interval);
           break;
         case 'weekly':
-          currentDate.setDate(currentDate.getDate() + (7 * repeat.interval));
+          currentDate.setDate(currentDate.getDate() + 7 * repeat.interval);
           break;
         case 'monthly':
           currentDate.setMonth(currentDate.getMonth() + repeat.interval);
@@ -213,29 +215,29 @@ app.put('/api/events/:id', async (req, res) => {
     }
   } else {
     // 단일 일정 수정
-    const eventIndex = updatedEvents.findIndex(e => e.id === id);
+    const eventIndex = updatedEvents.findIndex((e) => e.id === id);
     if (eventIndex > -1) {
-      updatedEvents[eventIndex] = { 
-        ...updatedEvents[eventIndex], 
+      updatedEvents[eventIndex] = {
+        ...updatedEvents[eventIndex],
         ...req.body,
-        repeat: { type: 'none', interval: 1 } // 반복 설정 제거
+        repeat: { type: 'none', interval: 1 }, // 반복 설정 제거
       };
-    }    
+    }
   }
 
   const updatedEventData = {
-    events: updatedEvents
+    events: updatedEvents,
   };
   saveEvents(updatedEventData);
 
-  res.json(updatedEvents.find(e => e.id === id));
+  res.json(updatedEvents.find((e) => e.id === id));
 });
 
 // 이벤트 삭제 API
 app.delete('/api/events/:id', async (req, res) => {
   const events = await getEvents();
   const id = req.params.id;
-  const event = events.events.find(e => e.id === id);
+  const event = events.events.find((e) => e.id === id);
 
   if (!event) {
     return res.status(404).send('Event not found');
@@ -249,20 +251,20 @@ app.delete('/api/events/:id', async (req, res) => {
     if (deleteType === 'future') {
       // 현재 일정 이후의 모든 일정 삭제
       const eventDate = new Date(event.date);
-      updatedEvents = updatedEvents.filter(e => 
-        !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
+      updatedEvents = updatedEvents.filter(
+        (e) => !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
       );
     } else if (deleteType === 'all') {
       // 모든 반복 일정 삭제
-      updatedEvents = updatedEvents.filter(e => e.repeat?.id !== repeatId);
+      updatedEvents = updatedEvents.filter((e) => e.repeat?.id !== repeatId);
     }
   } else {
     // 단일 일정 삭제
-    updatedEvents = updatedEvents.filter(e => e.id !== id);
+    updatedEvents = updatedEvents.filter((e) => e.id !== id);
   }
 
   const updatedEventData = {
-    events: updatedEvents
+    events: updatedEvents,
   };
   saveEvents(updatedEventData);
   res.status(204).send();
@@ -284,7 +286,7 @@ app.put('/api/events-list', async (req, res) => {
 
   if (isUpdated) {
     const updatedEvents = {
-      events: newEvents
+      events: newEvents,
     };
     saveEvents(updatedEvents);
     res.json(newEvents);
@@ -299,7 +301,7 @@ app.delete('/api/events-list', async (req, res) => {
   const newEvents = events.events.filter((event) => !req.body.eventIds.includes(event.id));
 
   const updatedEvents = {
-    events: newEvents
+    events: newEvents,
   };
   saveEvents(updatedEvents);
   res.status(204).send();

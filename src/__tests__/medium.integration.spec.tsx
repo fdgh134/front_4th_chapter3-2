@@ -1,9 +1,9 @@
-import { vi, beforeEach, afterEach } from 'vitest';
 import { ChakraProvider } from '@chakra-ui/react';
 import { render, screen, within, act } from '@testing-library/react';
 import { UserEvent, userEvent } from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { ReactElement } from 'react';
+import { vi, beforeEach, afterEach } from 'vitest';
 
 import {
   setupMockHandlerCreation,
@@ -31,10 +31,10 @@ const saveSchedule = async (
   await user.click(screen.getByRole('button', { name: '일정 추가' }));
 
   // 작은 지연 추가
-  await new Promise(resolve => setTimeout(resolve, 0));
-  
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
   // 일반 텍스트 입력
-  await user.type(screen.getByRole('textbox', { name: '제목'}), title);
+  await user.type(screen.getByRole('textbox', { name: '제목' }), title);
   await user.type(screen.getByRole('textbox', { name: '설명' }), description);
   await user.type(screen.getByRole('textbox', { name: '위치' }), location);
 
@@ -66,22 +66,29 @@ const saveRepeatSchedule = async (
     repeatWeekdays?: number[];
   }
 ) => {
-  const { 
-    title, date, startTime, endTime, 
-    description, location, category, 
-    repeatType, repeatInterval, 
-    repeatEndDate, repeatWeekdays 
+  const {
+    title,
+    date,
+    startTime,
+    endTime,
+    description,
+    location,
+    category,
+    repeatType,
+    repeatInterval,
+    repeatEndDate,
+    repeatWeekdays,
   } = form;
 
   await act(async () => {
     await user.click(screen.getByRole('button', { name: '일정 추가' }));
 
     // 일반 텍스트 입력
-    await user.type(screen.getByRole('textbox', { name: '제목'}), title);
+    await user.type(screen.getByRole('textbox', { name: '제목' }), title);
     await user.type(screen.getByRole('textbox', { name: '설명' }), description);
     await user.type(screen.getByRole('textbox', { name: '위치' }), location);
   });
-  
+
   // 날짜와 시간 입력
   await user.type(screen.getByLabelText(/날짜\s*\*/), date);
   await user.type(screen.getByLabelText(/시작 시간\s*\*/), startTime);
@@ -93,10 +100,7 @@ const saveRepeatSchedule = async (
   // 반복 설정
   await user.click(screen.getByTestId('repeat-schedule-checkbox'));
 
-  await user.selectOptions(
-    screen.getByRole('combobox', { name: '반복 유형' }), 
-    repeatType
-  );
+  await user.selectOptions(screen.getByRole('combobox', { name: '반복 유형' }), repeatType);
 
   // 추가 반복 설정
   if (repeatInterval > 1) {
@@ -178,7 +182,7 @@ describe('일정 CRUD 및 기본 기능', () => {
     // 삭제 버튼 클릭
     const allDeleteButton = await screen.findAllByLabelText('Delete event');
     await user.click(allDeleteButton[0]);
-    
+
     expect(eventList.queryByText('삭제할 이벤트')).not.toBeInTheDocument();
   });
 });
@@ -434,7 +438,7 @@ describe('반복 일정 기능', () => {
         repeatWeekdays: [3], // 수요일만 선택
       });
     });
-    
+
     // 토스트 메시지와 이벤트 생성 대기
     await act(async () => {
       await screen.findByText('일정이 추가되었습니다.');
@@ -452,9 +456,7 @@ describe('반복 일정 기능', () => {
     const cells = await within(monthView).findAllByRole('cell');
     // console.log('Cells content:', cells.map(cell => cell.textContent));
 
-    const hasEventTitle = cells.some(cell => 
-      cell.textContent?.includes('주간 팀 미팅')
-    );
+    const hasEventTitle = cells.some((cell) => cell.textContent?.includes('주간 팀 미팅'));
 
     expect(hasEventTitle).toBe(true);
   });
@@ -511,7 +513,6 @@ describe('반복 일정 기능', () => {
     expect(afterremainingRepeatIcons.length).toBe(4); // 4
   });
 
-  
   it('반복 일정 단일 삭제시 해당 일정만 삭제된다', async () => {
     setupMockHandlerCreation([]);
 
@@ -568,7 +569,7 @@ describe('반복 일정 기능', () => {
     const { user } = setup(<App />);
 
     vi.setSystemTime(new Date('2024-02-29'));
-    
+
     // 윤년 2월 29일 반복 일정 생성
     await act(async () => {
       await saveRepeatSchedule(user, {
@@ -581,7 +582,7 @@ describe('반복 일정 기능', () => {
         category: '업무',
         repeatType: 'monthly',
         repeatInterval: 1,
-        repeatEndDate: '2025-02-29'
+        repeatEndDate: '2025-02-29',
       });
     });
 
@@ -593,38 +594,37 @@ describe('반복 일정 기능', () => {
     // 서버에서 생성된 이벤트 확인
     const response = await fetch('/api/events');
     const { events } = await response.json();
-    
+
     // 기대되는 날짜들 (월말)
     const expectedDates = [
-      '2024-02-29', 
-      '2024-03-31', 
-      '2024-04-30', 
-      '2024-05-31', 
-      '2024-06-30', 
-      '2024-07-31', 
-      '2024-08-31', 
-      '2024-09-30', 
-      '2024-10-31', 
-      '2024-11-30', 
-      '2024-12-31', 
-      '2025-01-31'
+      '2024-02-29',
+      '2024-03-31',
+      '2024-04-30',
+      '2024-05-31',
+      '2024-06-30',
+      '2024-07-31',
+      '2024-08-31',
+      '2024-09-30',
+      '2024-10-31',
+      '2024-11-30',
+      '2024-12-31',
+      '2025-01-31',
     ];
-    
-    const monthlyEvents = events.filter((e: Event) => 
-      e.title === '윤년 월말 일정' && 
-      expectedDates.includes(e.date)
+
+    const monthlyEvents = events.filter(
+      (e: Event) => e.title === '윤년 월말 일정' && expectedDates.includes(e.date)
     );
-  
+
     // 이벤트 개수 확인
     expect(monthlyEvents.length).toBe(expectedDates.length);
-    
+
     // 각 월말 날짜 검증
-    expectedDates.forEach(expectedDate => {
+    expectedDates.forEach((expectedDate) => {
       const matchingEvent = monthlyEvents.find((e: Event) => e.date === expectedDate);
       expect(matchingEvent).toBeTruthy();
       expect(matchingEvent.title).toBe('윤년 월말 일정');
     });
-    
+
     // 뷰를 월별로 변경
     await act(async () => {
       await user.selectOptions(screen.getByLabelText('view'), 'month');
@@ -632,16 +632,16 @@ describe('반복 일정 기능', () => {
 
     // Previous 버튼 클릭하여 2024년 2월로 이동
     const prevButton = screen.getByLabelText('Previous');
-    
+
     // 2024년 10월에서 2024년 2월까지 이동 (8번)
-    for(let i = 0; i < 8; i++) {
+    for (let i = 0; i < 8; i++) {
       await act(async () => {
         await user.click(prevButton);
       });
     }
 
     // 각 월별로 확인
-    for(const expectedDate of expectedDates) {
+    for (const expectedDate of expectedDates) {
       // 월 및 날짜 분리
       const [, , day] = expectedDate.split('-');
 
@@ -650,19 +650,19 @@ describe('반복 일정 기능', () => {
       const cells = await within(monthView).findAllByRole('cell');
 
       // 마지막 날 셀 찾기
-      const lastDayCell = cells.find(cell => {
+      const lastDayCell = cells.find((cell) => {
         const cellText = cell.textContent || '';
-    
+
         // 여러 방식으로 날짜와 이벤트 매칭
-        const matchesDay = 
-          cellText.trim() === day || 
-          cellText.startsWith(day) || 
+        const matchesDay =
+          cellText.trim() === day ||
+          cellText.startsWith(day) ||
           cellText.includes(day + '윤년 월말 일정') ||
           cellText.includes('윤년 월말 일정');
 
         return matchesDay;
       });
-      
+
       if (lastDayCell) {
         expect(lastDayCell.textContent).toContain('윤년 월말 일정');
       }
@@ -677,4 +677,3 @@ describe('반복 일정 기능', () => {
     }
   }, 10000);
 });
-

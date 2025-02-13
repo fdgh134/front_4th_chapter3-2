@@ -17,8 +17,8 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       // 반복 일정인 경우 처리
       if (newEvent.repeat.type !== 'none') {
         const startDate = new Date(newEvent.date);
-        const endDate = newEvent.repeat.endDate 
-          ? new Date(newEvent.repeat.endDate) 
+        const endDate = newEvent.repeat.endDate
+          ? new Date(newEvent.repeat.endDate)
           : new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
 
         const recurringEvents: Event[] = [];
@@ -27,8 +27,8 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
         const repeatId = Math.random().toString(); // 반복 일정 그룹화 ID
 
         while (currentDate <= endDate) {
-           // 반복 타입에 따른 이벤트 생성 처리
-           switch (newEvent.repeat.type) {
+          // 반복 타입에 따른 이벤트 생성 처리
+          switch (newEvent.repeat.type) {
             case 'weekly': {
               // 주간 반복: weekdays가 있고 해당 요일이 선택된 경우만 생성
               const weekdays = newEvent.repeat.weekdays || [];
@@ -37,7 +37,7 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
                   ...newEvent,
                   id: Math.random().toString(),
                   date: currentDate.toISOString().split('T')[0],
-                  repeat: { ...newEvent.repeat, id: repeatId }
+                  repeat: { ...newEvent.repeat, id: repeatId },
                 });
               }
               break;
@@ -53,7 +53,7 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
                 ...newEvent,
                 id: Math.random().toString(),
                 date: lastDayOfMonth.toISOString().split('T')[0],
-                repeat: { ...newEvent.repeat, id: repeatId }
+                repeat: { ...newEvent.repeat, id: repeatId },
               });
               break;
             }
@@ -64,7 +64,7 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
                 ...newEvent,
                 id: Math.random().toString(),
                 date: currentDate.toISOString().split('T')[0],
-                repeat: { ...newEvent.repeat, id: repeatId }
+                repeat: { ...newEvent.repeat, id: repeatId },
               });
               break;
             }
@@ -76,7 +76,7 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
               currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
               break;
             case 'weekly':
-              currentDate.setDate(currentDate.getDate() + (7 * newEvent.repeat.interval));
+              currentDate.setDate(currentDate.getDate() + 7 * newEvent.repeat.interval);
               break;
             case 'monthly':
               currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
@@ -85,10 +85,10 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
               currentDate.setFullYear(currentDate.getFullYear() + newEvent.repeat.interval);
               break;
           }
-        } 
+        }
 
         mockEvents.push(...recurringEvents);
-        
+
         // 첫 번째 이벤트를 응답으로 반환
         return HttpResponse.json(recurringEvents[0], { status: 201 });
       } else {
@@ -102,31 +102,31 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       const { id } = params;
       const updatedEvent = (await request.json()) as Event;
       const index = mockEvents.findIndex((event) => event.id === id);
-    
+
       if (index !== -1) {
         // 단일 일정으로 변경
         const modifiedEvent: Event = {
           ...mockEvents[index],
           ...updatedEvent,
-          repeat: { 
-            type: 'none', 
+          repeat: {
+            type: 'none',
             interval: 1,
             endDate: undefined,
-            weekdays: undefined
-          }
+            weekdays: undefined,
+          },
         };
         mockEvents[index] = { ...modifiedEvent };
-    
+
         return HttpResponse.json(modifiedEvent);
       }
-    
+
       return HttpResponse.json(null, { status: 404 });
     }),
     http.delete('/api/events/:id', async ({ params, request }) => {
       const { id } = params;
       const url = new URL(request.url);
       const deleteType = url.searchParams.get('deleteType') || 'single';
-      const event = mockEvents.find(e => e.id === id);
+      const event = mockEvents.find((e) => e.id === id);
 
       if (!event) {
         return new HttpResponse(null, { status: 404 });
@@ -137,23 +137,23 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       if (repeatId && deleteType !== 'single') {
         if (deleteType === 'future') {
           const eventDate = new Date(event.date);
-          const keepIndex = mockEvents.findIndex(e => 
-            !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
+          const keepIndex = mockEvents.findIndex(
+            (e) => !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
           );
           mockEvents.splice(keepIndex + 1);
         } else if (deleteType === 'all') {
           const removeIndexes = mockEvents
-            .map((e, i) => e.repeat?.id === repeatId ? i : -1)
-            .filter(i => i !== -1)
+            .map((e, i) => (e.repeat?.id === repeatId ? i : -1))
+            .filter((i) => i !== -1)
             .reverse();
-          
-          removeIndexes.forEach(index => {
+
+          removeIndexes.forEach((index) => {
             mockEvents.splice(index, 1);
           });
         }
       } else {
         // 단일 일정 삭제
-        const index = mockEvents.findIndex(e => e.id === id);
+        const index = mockEvents.findIndex((e) => e.id === id);
         if (index !== -1) {
           mockEvents.splice(index, 1);
         }
