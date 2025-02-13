@@ -1,4 +1,4 @@
-export type RepeatType = "none" | "daily" | "weekly" | "monthly" | "yearly";
+export type RepeatType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface RepeatInfo {
   type: RepeatType;

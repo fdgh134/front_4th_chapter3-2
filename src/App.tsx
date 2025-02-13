@@ -478,12 +478,12 @@ function App() {
         data-testid="event-item"
         p={4}
         my={2}
-        bg='white'
-        borderRadius='lg'
-        borderWidth='1px'
-        borderColor='gray.200'
-        position='relative'
-        w='100%'
+        bg="white"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
+        position="relative"
+        w="100%"
       >
         <HStack justifyContent="space-between">
           <VStack align="start" spacing={1}>
@@ -619,7 +619,8 @@ function App() {
                               {holiday}
                             </Text>
                           )}
-                          {getEventsForDay(filteredEvents, day).map((event) => renderCalendarEvent(event, true))}
+                          {getEventsForDay(filteredEvents, day).map((event) => 
+                            renderCalendarEvent(event, true))}
                         </>
                       )}
                     </Td>
