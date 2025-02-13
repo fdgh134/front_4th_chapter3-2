@@ -19,6 +19,46 @@
         "id": "15b96c95-734b-4add-b1d0-824fe97d5e21"
       },
       "notificationTime": 10
+    },
+    {
+      "id": "0a0338fe-9cd8-4861-a7e7-69b6706bd4d6",
+      "title": "반복테스트",
+      "date": "2025-02-20",
+      "startTime": "09:00",
+      "endTime": "09:50",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "weekly",
+        "interval": 1,
+        "endDate": "2025-02-27",
+        "weekdays": [
+          4
+        ],
+        "id": "b4972e94-1dec-427a-aa36-b4c9ab511fc8"
+      },
+      "notificationTime": 10
+    },
+    {
+      "id": "489112c7-72bf-4a32-b912-f6546b1f0a19",
+      "title": "반복테스트",
+      "date": "2025-02-27",
+      "startTime": "09:00",
+      "endTime": "09:50",
+      "description": "반복테스트",
+      "location": "사무실",
+      "category": "업무",
+      "repeat": {
+        "type": "weekly",
+        "interval": 1,
+        "endDate": "2025-02-27",
+        "weekdays": [
+          4
+        ],
+        "id": "b4972e94-1dec-427a-aa36-b4c9ab511fc8"
+      },
+      "notificationTime": 10
     }
   ]
 }

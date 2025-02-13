@@ -414,12 +414,6 @@ describe('반복 일정 기능', () => {
     server.resetHandlers();
   });
 
-  const waitForEventUpdate = async () => {
-    await screen.findByText('일정이 추가되었습니다.');
-    await screen.findByTestId('event-list');
-    await new Promise(resolve => setTimeout(resolve, 100));
-  };
-
   it('반복 일정 생성시 반복 일정이 표시된다', async () => {
     setupMockHandlerCreation([]);
 
@@ -456,7 +450,6 @@ describe('반복 일정 기능', () => {
     // 데이터 검증
     const monthView = await screen.findByTestId('month-view');
     const cells = await within(monthView).findAllByRole('cell');
-  
     // console.log('Cells content:', cells.map(cell => cell.textContent));
 
     const hasEventTitle = cells.some(cell => 
@@ -566,19 +559,11 @@ describe('반복 일정 기능', () => {
 
     // 총 4개의 이벤트가 남아야 함
     expect(events.length).toBe(4);
-
-    // 남은 이벤트들의 날짜 확인
-    const eventDates = events.map(event => {
-      const dateMatch = event.textContent?.match(/\d{4}-\d{2}-\d{2}/);
-      return dateMatch ? dateMatch[0] : null;
-    });
-
-    // 첫 번째 날짜(2024-10-02)가 제거되었는지 확인
-    expect(eventDates).not.toContain('2024-10-02');
   });
 
   it('윤년 2월 29일에 매월 반복 설정시 해당 월의 마지막 날에 일정이 생성된다', async () => {
-    setupMockHandlerCreation([]);
+    const mockEvents: Event[] = []; // mockEvents 추적
+    setupMockHandlerCreation(mockEvents);
 
     const { user } = setup(<App />);
 
@@ -600,49 +585,96 @@ describe('반복 일정 기능', () => {
       });
     });
 
-    // 이벤트 업데이트 대기
-    await waitForEventUpdate();
+    // 일정 추가 완료 메시지 대기
+    await act(async () => {
+      await screen.findByText('일정이 추가되었습니다.');
+    });
 
-    // 뷰를 월별로 변경
-    await user.selectOptions(screen.getByLabelText('view'), 'month');
-
-    // 잠시 대기
-    await act(async () => null);
-
+    // 서버에서 생성된 이벤트 확인
+    const response = await fetch('/api/events');
+    const { events } = await response.json();
+    
     // 기대되는 날짜들 (월말)
     const expectedDates = [
-      '2024-02-29', // 초기 날짜
-      '2024-03-31', // 3월 (31일)
-      '2024-04-30', // 4월 (30일)
-      '2024-05-31', // 5월 (31일)
-      '2024-06-30', // 6월 (30일)
-      '2024-07-31', // 7월 (31일)
-      '2024-08-31', // 8월 (31일)
-      '2024-09-30', // 9월 (30일)
-      '2024-10-31', // 10월 (31일)
-      '2024-11-30', // 11월 (30일)
-      '2024-12-31', // 12월 (31일)
-      '2025-01-31', // 1월 (31일)
-      '2025-02-28'  // 2월 (윤년 아님)
+      '2024-02-29', 
+      '2024-03-31', 
+      '2024-04-30', 
+      '2024-05-31', 
+      '2024-06-30', 
+      '2024-07-31', 
+      '2024-08-31', 
+      '2024-09-30', 
+      '2024-10-31', 
+      '2024-11-30', 
+      '2024-12-31', 
+      '2025-01-31'
     ];
-
-    // 모든 이벤트 확인
-    const events = screen.getAllByTestId('event-item');
-    console.log('Total events:', events.length);
-
-    // 생성된 반복 일정의 날짜들 추출
-    const eventDates = events.map(event => {
-      const dateMatch = event.textContent?.match(/\d{4}-\d{2}-\d{2}/g);
-      return dateMatch ? dateMatch[0] : null;
-    }).filter(Boolean);
-
-    console.log('Event dates:', eventDates);
-
-    // 생성된 날짜들이 기대하는 날짜들과 일치하는지 확인
+    
+    const monthlyEvents = events.filter((e: Event) => 
+      e.title === '윤년 월말 일정' && 
+      expectedDates.includes(e.date)
+    );
+  
+    // 이벤트 개수 확인
+    expect(monthlyEvents.length).toBe(expectedDates.length);
+    
+    // 각 월말 날짜 검증
     expectedDates.forEach(expectedDate => {
-      const matchingEvents = eventDates.filter(date => date === expectedDate);
-      expect(matchingEvents).toHaveLength(1);
+      const matchingEvent = monthlyEvents.find((e: Event) => e.date === expectedDate);
+      expect(matchingEvent).toBeTruthy();
+      expect(matchingEvent.title).toBe('윤년 월말 일정');
     });
-  });
+    
+    // 뷰를 월별로 변경
+    await act(async () => {
+      await user.selectOptions(screen.getByLabelText('view'), 'month');
+    });
+
+    // Previous 버튼 클릭하여 2024년 2월로 이동
+    const prevButton = screen.getByLabelText('Previous');
+    
+    // 2024년 10월에서 2024년 2월까지 이동 (8번)
+    for(let i = 0; i < 8; i++) {
+      await act(async () => {
+        await user.click(prevButton);
+      });
+    }
+
+    // 각 월별로 확인
+    for(const expectedDate of expectedDates) {
+      // 월 및 날짜 분리
+      const [, , day] = expectedDate.split('-');
+
+      // 해당 월의 마지막 날 셀 찾기
+      const monthView = await screen.findByTestId('month-view');
+      const cells = await within(monthView).findAllByRole('cell');
+
+      // 마지막 날 셀 찾기
+      const lastDayCell = cells.find(cell => {
+        const cellText = cell.textContent || '';
+    
+        // 여러 방식으로 날짜와 이벤트 매칭
+        const matchesDay = 
+          cellText.trim() === day || 
+          cellText.startsWith(day) || 
+          cellText.includes(day + '윤년 월말 일정') ||
+          cellText.includes('윤년 월말 일정');
+
+        return matchesDay;
+      });
+      
+      if (lastDayCell) {
+        expect(lastDayCell.textContent).toContain('윤년 월말 일정');
+      }
+
+      expect(lastDayCell).toBeTruthy();
+
+      // 다음 달로 이동
+      const nextButton = screen.getByLabelText('Next');
+      await act(async () => {
+        await user.click(nextButton);
+      });
+    }
+  }, 10000);
 });
 

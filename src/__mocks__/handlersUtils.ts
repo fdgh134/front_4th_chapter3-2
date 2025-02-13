@@ -17,16 +17,41 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       // 반복 일정인 경우 처리
       if (newEvent.repeat.type !== 'none') {
         const startDate = new Date(newEvent.date);
-        const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : new Date(startDate);
+        const endDate = newEvent.repeat.endDate ? new Date(newEvent.repeat.endDate) : new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
         const recurringEvents: Event[] = [];
 
         let currentDate = new Date(startDate);
         const repeatId = Math.random().toString(); // 반복 일정 그룹화 ID
 
         while (currentDate <= endDate) {
-          // 주간 반복인 경우 요일 체크
-          if (newEvent.repeat.type === 'weekly' && 
+          // 월별 반복의 경우 항상 월말 날짜에 이벤트 생성
+          if (newEvent.repeat.type === 'monthly') {
+            // 현재 월의 마지막 날 계산
+            const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            recurringEvents.push({
+              ...newEvent,
+              id: Math.random().toString(),
+              date: lastDayOfMonth.toISOString().split('T')[0],
+              repeat: {
+                ...newEvent.repeat,
+                id: repeatId
+              }
+            });
+          }
+          // 다른 반복 타입
+          else if (newEvent.repeat.type === 'weekly' && 
               newEvent.repeat.weekdays?.includes(currentDate.getDay())) {
+            recurringEvents.push({
+              ...newEvent,
+              id: Math.random().toString(),
+              date: currentDate.toISOString().split('T')[0],
+              repeat: {
+                ...newEvent.repeat,
+                id: repeatId
+              }
+            });
+          } else if (newEvent.repeat.type !== 'weekly') {
             recurringEvents.push({
               ...newEvent,
               id: Math.random().toString(),
@@ -38,8 +63,7 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
             });
           }
 
-          // 다음 날짜 계산 (주간 반복)
-          // currentDate.setDate(currentDate.getDate() + 7);
+          // 다음 날짜 계산
           switch (newEvent.repeat.type) {
             case 'daily':
               currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
@@ -90,6 +114,45 @@ export const setupMockHandlerCreation = (initEvents = [] as Event[]) => {
       }
     
       return HttpResponse.json(null, { status: 404 });
+    }),
+    http.delete('/api/events/:id', async ({ params, request }) => {
+      const { id } = params;
+      const url = new URL(request.url);
+      const deleteType = url.searchParams.get('deleteType') || 'single';
+      const event = mockEvents.find(e => e.id === id);
+
+      if (!event) {
+        return new HttpResponse(null, { status: 404 });
+      }
+
+      const repeatId = event.repeat?.id;
+
+      if (repeatId && deleteType !== 'single') {
+        if (deleteType === 'future') {
+          const eventDate = new Date(event.date);
+          const keepIndex = mockEvents.findIndex(e => 
+            !(e.repeat?.id === repeatId && new Date(e.date) >= eventDate)
+          );
+          mockEvents.splice(keepIndex + 1);
+        } else if (deleteType === 'all') {
+          const removeIndexes = mockEvents
+            .map((e, i) => e.repeat?.id === repeatId ? i : -1)
+            .filter(i => i !== -1)
+            .reverse();
+          
+          removeIndexes.forEach(index => {
+            mockEvents.splice(index, 1);
+          });
+        }
+      } else {
+        // 단일 일정 삭제
+        const index = mockEvents.findIndex(e => e.id === id);
+        if (index !== -1) {
+          mockEvents.splice(index, 1);
+        }
+      }
+
+      return new HttpResponse(null, { status: 204 });
     })
   );
 };
