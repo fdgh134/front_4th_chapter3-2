@@ -160,7 +160,7 @@ function App() {
         });
         return;
       }
-  
+
       const eventData: Event | EventForm = {
         id: editingEvent ? editingEvent.id : undefined,
         title,
@@ -171,46 +171,44 @@ function App() {
         location,
         category,
         repeat: {
-          type: editingEvent && updateType === 'single' 
-          ? 'none' 
-          : (isRepeating ? repeatType : 'none'),
+          type:
+            editingEvent && updateType === 'single' ? 'none' : isRepeating ? repeatType : 'none',
           interval: repeatInterval,
           endDate: repeatEndDate || undefined,
           weekdays: repeatWeekdays,
         },
         notificationTime,
       };
-  
+
       const overlapping = findOverlappingEvents(eventData, events);
       if (!ignoreOverlap && overlapping.length > 0) {
         setOverlappingEvents(overlapping);
         setIsOverlapDialogOpen(true);
-        return
+        return;
       }
 
       await saveEvent(eventData, editingEvent ? updateType : undefined);
       if (editingEvent && updateType === 'single') {
         const updatedEvent = {
           ...eventData,
-          repeat: { type: 'none', interval: 1 } // 단일 일정으로 변경
+          repeat: { type: 'none', interval: 1 }, // 단일 일정으로 변경
         };
         editEvent(updatedEvent as Event); // 폼에 업데이트된 정보 설정
       }
-      setIsUpdateDialogOpen(false);  
-      
+      setIsUpdateDialogOpen(false);
     } else if (action === 'delete' && selectedEventId) {
       await deleteEvent(selectedEventId, updateType);
       setIsDeleteDialogOpen(false);
       setSelectedEventId(null);
-    }    
+    }
   };
 
   const renderEventDialog = (type: 'update' | 'delete') => {
     const isUpdate = type === 'update';
     const isOpen = isUpdate ? isUpdateDialogOpen : isDeleteDialogOpen;
     const title = isUpdate ? '일정 수정' : '일정 삭제';
-    const description = isUpdate 
-      ? '이 반복 일정을 어떻게 수정하시겠습니까?' 
+    const description = isUpdate
+      ? '이 반복 일정을 어떻게 수정하시겠습니까?'
       : '이 반복 일정을 어떻게 삭제하시겠습니까?';
 
     return (
@@ -233,23 +231,35 @@ function App() {
 
             <AlertDialogBody>
               <Text mb={4}>{description}</Text>
-              <RadioGroup value={updateType} onChange={(value: 'single' | 'future' | 'all') => setUpdateType(value)}>
+              <RadioGroup
+                value={updateType}
+                onChange={(value: 'single' | 'future' | 'all') => setUpdateType(value)}
+              >
                 <Stack direction="column">
-                  <Radio value="single" data-testid="radio-update-single">이 일정만</Radio>
-                  <Radio value="future" data-testid="radio-update-future">이 일정 및 향후 일정</Radio>
-                  <Radio value="all" data-testid="radio-update-all">모든 반복 일정</Radio>
+                  <Radio value="single" data-testid="radio-update-single">
+                    이 일정만
+                  </Radio>
+                  <Radio value="future" data-testid="radio-update-future">
+                    이 일정 및 향후 일정
+                  </Radio>
+                  <Radio value="all" data-testid="radio-update-all">
+                    모든 반복 일정
+                  </Radio>
                 </Stack>
               </RadioGroup>
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={() => {
-                if (isUpdate) {
-                  setIsUpdateDialogOpen(false);
-                } else {
-                  setIsDeleteDialogOpen(false);
-                }
-              }}>
+              <Button
+                ref={cancelRef}
+                onClick={() => {
+                  if (isUpdate) {
+                    setIsUpdateDialogOpen(false);
+                  } else {
+                    setIsDeleteDialogOpen(false);
+                  }
+                }}
+              >
                 취소
               </Button>
               <Button
@@ -319,11 +329,12 @@ function App() {
 
       <FormControl>
         <FormLabel htmlFor="category">카테고리</FormLabel>
-        <Select 
-          id = "category" 
-          aria-label = "카테고리 선택"
-          value = {category} 
-          onChange = {(e) => setCategory(e.target.value)}>
+        <Select
+          id="category"
+          aria-label="카테고리 선택"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        >
           <option value="">카테고리 선택</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
@@ -335,12 +346,12 @@ function App() {
 
       <FormControl>
         <FormLabel>반복 설정</FormLabel>
-        <Checkbox 
+        <Checkbox
           data-testid="repeat-schedule-checkbox"
           aria-label="반복 일정"
-          isChecked={isRepeating} 
+          isChecked={isRepeating}
           onChange={(e) => {
-            setIsRepeating(e.target.checked)
+            setIsRepeating(e.target.checked);
           }}
         >
           반복 일정
@@ -371,7 +382,7 @@ function App() {
               id="repeat-type"
               data-testid="repeat-type-select"
               aria-label="반복 유형"
-              name="repeat-type"  // name 속성 추가
+              name="repeat-type" // name 속성 추가
               value={repeatType}
               onChange={(e) => setRepeatType(e.target.value as RepeatType)}
             >
@@ -389,13 +400,13 @@ function App() {
                 {weekDays.map((day, index) => (
                   <Checkbox
                     key={day}
-                    data-testid={`weekday-checkbox-${day}`} 
+                    data-testid={`weekday-checkbox-${day}`}
                     isChecked={repeatWeekdays.includes(index)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setRepeatWeekdays([...repeatWeekdays, index]);
                       } else {
-                        setRepeatWeekdays(repeatWeekdays.filter(d => d !== index));
+                        setRepeatWeekdays(repeatWeekdays.filter((d) => d !== index));
                       }
                     }}
                   >
@@ -442,7 +453,7 @@ function App() {
   const renderCalendarEvent = (event: Event, isCalendarView = true) => {
     const isNotified = notifiedEvents.includes(event.id);
     const isRepeating = event.repeat?.type !== 'none';
-  
+
     return (
       <Box
         key={event.id}
@@ -468,7 +479,7 @@ function App() {
       </Box>
     );
   };
-  
+
   const renderEvent = (event: Event) => {
     const isNotified = notifiedEvents.includes(event.id);
     const isRepeating = event.repeat?.type !== 'none';
@@ -619,8 +630,9 @@ function App() {
                               {holiday}
                             </Text>
                           )}
-                          {getEventsForDay(filteredEvents, day).map((event) => 
-                            renderCalendarEvent(event, true))}
+                          {getEventsForDay(filteredEvents, day).map((event) =>
+                            renderCalendarEvent(event, true)
+                          )}
                         </>
                       )}
                     </Td>

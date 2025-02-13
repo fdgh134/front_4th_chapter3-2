@@ -13,9 +13,7 @@
         "type": "weekly",
         "interval": 1,
         "endDate": "2025-03-03",
-        "weekdays": [
-          1
-        ],
+        "weekdays": [1],
         "id": "15b96c95-734b-4add-b1d0-824fe97d5e21"
       },
       "notificationTime": 10
@@ -33,9 +31,7 @@
         "type": "weekly",
         "interval": 1,
         "endDate": "2025-02-27",
-        "weekdays": [
-          4
-        ],
+        "weekdays": [4],
         "id": "b4972e94-1dec-427a-aa36-b4c9ab511fc8"
       },
       "notificationTime": 10
@@ -53,9 +49,7 @@
         "type": "weekly",
         "interval": 1,
         "endDate": "2025-02-27",
-        "weekdays": [
-          4
-        ],
+        "weekdays": [4],
         "id": "b4972e94-1dec-427a-aa36-b4c9ab511fc8"
       },
       "notificationTime": 10
@@ -72,9 +66,7 @@
       "repeat": {
         "type": "weekly",
         "interval": 1,
-        "weekdays": [
-          5
-        ],
+        "weekdays": [5],
         "id": "3506f710-f4fd-4db6-aa4c-6e2885feb529"
       },
       "notificationTime": 10
@@ -91,9 +83,7 @@
       "repeat": {
         "type": "weekly",
         "interval": 1,
-        "weekdays": [
-          5
-        ],
+        "weekdays": [5],
         "id": "3506f710-f4fd-4db6-aa4c-6e2885feb529"
       },
       "notificationTime": 10
@@ -110,9 +100,7 @@
       "repeat": {
         "type": "weekly",
         "interval": 1,
-        "weekdays": [
-          5
-        ],
+        "weekdays": [5],
         "id": "3506f710-f4fd-4db6-aa4c-6e2885feb529"
       },
       "notificationTime": 10
@@ -129,9 +117,7 @@
       "repeat": {
         "type": "weekly",
         "interval": 1,
-        "weekdays": [
-          5
-        ],
+        "weekdays": [5],
         "id": "3506f710-f4fd-4db6-aa4c-6e2885feb529"
       },
       "notificationTime": 10
@@ -148,9 +134,7 @@
       "repeat": {
         "type": "weekly",
         "interval": 1,
-        "weekdays": [
-          5
-        ],
+        "weekdays": [5],
         "id": "3506f710-f4fd-4db6-aa4c-6e2885feb529"
       },
       "notificationTime": 10

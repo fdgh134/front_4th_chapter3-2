@@ -26,7 +26,10 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
     }
   };
 
-  const saveEvent = async (eventData: Event | EventForm, updateType?: 'single' | 'future' | 'all') => {
+  const saveEvent = async (
+    eventData: Event | EventForm,
+    updateType?: 'single' | 'future' | 'all'
+  ) => {
     try {
       let response;
       if (editing) {
@@ -69,7 +72,9 @@ export const useEventOperations = (editing: boolean, onSave?: () => void) => {
 
   const deleteEvent = async (id: string, deleteType: 'single' | 'future' | 'all') => {
     try {
-      const response = await fetch(`/api/events/${id}?deleteType=${deleteType}`, { method: 'DELETE' });
+      const response = await fetch(`/api/events/${id}?deleteType=${deleteType}`, {
+        method: 'DELETE',
+      });
 
       if (!response.ok) {
         throw new Error('Failed to delete event');
