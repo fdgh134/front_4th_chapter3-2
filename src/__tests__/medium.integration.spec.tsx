@@ -568,7 +568,7 @@ describe('반복 일정 기능', () => {
     const { user } = setup(<App />);
 
     vi.setSystemTime(new Date('2024-02-29'));
-
+    
     // 윤년 2월 29일 반복 일정 생성
     await act(async () => {
       await saveRepeatSchedule(user, {
