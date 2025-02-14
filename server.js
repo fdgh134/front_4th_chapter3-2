@@ -50,6 +50,30 @@ const saveEvents = (events) => {
   );
 };
 
+// 다음 날짜 계산 함수
+const calculateNextDate = (currentDate, repeat) => {
+  const nextDate = new Date(currentDate);
+  
+  switch (repeat.type) {
+    case 'daily':
+      nextDate.setDate(nextDate.getDate() + repeat.interval);
+      break;
+    case 'weekly':
+      nextDate.setDate(nextDate.getDate() + 7 * repeat.interval);
+      break;
+    case 'monthly':
+      nextDate.setMonth(nextDate.getMonth() + repeat.interval);
+      nextDate = adjustDate(nextDate, 'monthly');
+      break;
+    case 'yearly':
+      nextDate.setFullYear(nextDate.getFullYear() + repeat.interval);
+      nextDate = adjustDate(nextDate, 'yearly');
+      break;
+  }
+
+  return nextDate;
+};
+
 // 모든 이벤트 조회 API
 app.get('/api/events', async (_, res) => {
   const events = await getEvents();
@@ -98,22 +122,23 @@ app.post('/api/events', async (req, res) => {
       }
 
       // 다음 날짜 계산
-      switch (newEvent.repeat.type) {
-        case 'daily':
-          currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
-          break;
-        case 'weekly':
-          currentDate.setDate(currentDate.getDate() + 7 * newEvent.repeat.interval);
-          break;
-        case 'monthly':
-          currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
-          currentDate = adjustDate(currentDate, 'monthly');
-          break;
-        case 'yearly':
-          currentDate.setFullYear(currentDate.getFullYear() + newEvent.repeat.interval);
-          currentDate = adjustDate(currentDate, 'yearly');
-          break;
-      }
+      currentDate = calculateNextDate(currentDate, newEvent.repeat);
+      // switch (newEvent.repeat.type) {
+      //   case 'daily':
+      //     currentDate.setDate(currentDate.getDate() + newEvent.repeat.interval);
+      //     break;
+      //   case 'weekly':
+      //     currentDate.setDate(currentDate.getDate() + 7 * newEvent.repeat.interval);
+      //     break;
+      //   case 'monthly':
+      //     currentDate.setMonth(currentDate.getMonth() + newEvent.repeat.interval);
+      //     currentDate = adjustDate(currentDate, 'monthly');
+      //     break;
+      //   case 'yearly':
+      //     currentDate.setFullYear(currentDate.getFullYear() + newEvent.repeat.interval);
+      //     currentDate = adjustDate(currentDate, 'yearly');
+      //     break;
+      // }
     }
 
     const updatedEvents = {
@@ -196,22 +221,23 @@ app.put('/api/events/:id', async (req, res) => {
       }
 
       // 다음 날짜 계산
-      switch (repeat.type) {
-        case 'daily':
-          currentDate.setDate(currentDate.getDate() + repeat.interval);
-          break;
-        case 'weekly':
-          currentDate.setDate(currentDate.getDate() + 7 * repeat.interval);
-          break;
-        case 'monthly':
-          currentDate.setMonth(currentDate.getMonth() + repeat.interval);
-          currentDate = adjustDate(currentDate, 'monthly');
-          break;
-        case 'yearly':
-          currentDate.setFullYear(currentDate.getFullYear() + repeat.interval);
-          currentDate = adjustDate(currentDate, 'yearly');
-          break;
-      }
+      currentDate = calculateNextDate(currentDate, repeat);
+      // switch (repeat.type) {
+      //   case 'daily':
+      //     currentDate.setDate(currentDate.getDate() + repeat.interval);
+      //     break;
+      //   case 'weekly':
+      //     currentDate.setDate(currentDate.getDate() + 7 * repeat.interval);
+      //     break;
+      //   case 'monthly':
+      //     currentDate.setMonth(currentDate.getMonth() + repeat.interval);
+      //     currentDate = adjustDate(currentDate, 'monthly');
+      //     break;
+      //   case 'yearly':
+      //     currentDate.setFullYear(currentDate.getFullYear() + repeat.interval);
+      //     currentDate = adjustDate(currentDate, 'yearly');
+      //     break;
+      // }
     }
   } else {
     // 단일 일정 수정
