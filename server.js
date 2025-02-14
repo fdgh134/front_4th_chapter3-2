@@ -52,7 +52,7 @@ const saveEvents = (events) => {
 
 // 다음 날짜 계산 함수
 const calculateNextDate = (currentDate, repeat) => {
-  const nextDate = new Date(currentDate);
+  let nextDate = new Date(currentDate);
 
   switch (repeat.type) {
     case 'daily':
